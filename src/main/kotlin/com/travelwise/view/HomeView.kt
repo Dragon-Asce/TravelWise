@@ -2,57 +2,87 @@ package com.travelwise.view
 
 import kotlinx.html.*
 
-object HomeView {
-    fun render(html: HTML) {
-        html.homeView()
-    }
-}
-
 fun HTML.homeView() {
     mainLayout {
         div("max-w-4xl mx-auto") {
-            // Header Section
-            div("text-center mb-10 mt-8") {
-                h1("text-4xl md:text-5xl font-extrabold text-blue-700 mb-4") { 
-                    +"Rencanakan Perjalananmu Lebih Cerdas" 
+            // Hero Section
+            div("text-center mb-12 animate-slide-up") {
+                div("inline-flex items-center gap-2 py-2 px-4 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 font-medium text-xs md:text-sm mb-6 backdrop-blur-md shadow-inner") {
+                    span("text-base") { +"✨" }
+                    +"Next-Gen Smart Travel Assistant"
                 }
-                p("text-slate-600 text-lg") { 
-                    +"Masukkan negara tujuan untuk mendapatkan analisis cuaca, rekomendasi aktivitas, dan estimasi anggaran." 
+                h1("text-4xl md:text-6xl font-black text-white mb-6 leading-tight tracking-tight") {
+                    +"Eksplorasi Destinasi "
+                    br()
+                    span("bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-cyan-300 to-emerald-400 animate-pulse-glow") {
+                        +"Tanpa Keraguan."
+                    }
+                }
+                p("text-slate-400 text-base md:text-lg max-w-2xl mx-auto leading-relaxed") {
+                    +"Cukup ketik nama kota atau negara. Sistem akan menganalisis cuaca real-time, menyusun rekomendasi aktivitas, dan menghitung estimasi budget secara otomatis."
                 }
             }
 
-            // Search Form Widget
-            div("bg-white p-6 md:p-8 rounded-xl shadow-lg border border-slate-100 mb-8") {
-                form {
-                    // --- HTMX Attributes Setup ---
-                    attributes["hx-post"] = "/search" // Endpoint backend yang akan di-hit
-                    attributes["hx-target"] = "#widget-container" // Target elemen ID untuk meletakkan hasil
-                    attributes["hx-indicator"] = "#loading-spinner" // ID elemen yang tampil saat proses loading
-                    attributes["hx-swap"] = "innerHTML"
+            // Glassmorphism Search Box dengan Hover Glow & Micro-interactions
+            div("group relative max-w-3xl mx-auto mb-12 animate-slide-up delay-100") {
+                div("absolute -inset-1 bg-gradient-to-r from-indigo-500 via-cyan-500 to-emerald-500 rounded-[2.5rem] blur-xl opacity-25 group-hover:opacity-60 transition duration-700 group-hover:duration-200")
 
-                    div("flex flex-col md:flex-row gap-4") {
-                        input(InputType.text, name = "country") {
-                            classes = setOf("flex-1", "border", "border-slate-300", "rounded-lg", "p-4", "text-lg", "focus:outline-none", "focus:ring-2", "focus:ring-blue-500", "focus:border-transparent")
-                            placeholder = "Contoh: Japan, Indonesia, France, Italy..."
-                            required = true
-                        }
-                        button(type = ButtonType.submit) {
-                            classes = setOf("bg-blue-600", "hover:bg-blue-700", "text-white", "font-bold", "py-4", "px-8", "rounded-lg", "transition", "duration-300", "flex", "items-center", "justify-center")
-                            +"Cari Sekarang 🔍"
+                div("relative bg-slate-900/90 backdrop-blur-2xl p-3 md:p-4 rounded-[2.2rem] border border-slate-800 shadow-2xl") {
+                    form {
+                        attributes["hx-get"] = "/api/search"
+                        attributes["hx-target"] = "#widget-container"
+                        attributes["hx-indicator"] = "#loading-spinner"
+                        attributes["hx-swap"] = "innerHTML"
+
+                        div("flex flex-col md:flex-row gap-3 relative") {
+                            div("relative flex-1 flex items-center") {
+                                div("absolute left-5 text-xl text-slate-400 transition-transform duration-300 group-focus-within:scale-125 group-focus-within:text-indigo-400") {
+                                    +"📍"
+                                }
+                                input(InputType.text, name = "destination") {
+                                    classes = setOf(
+                                        "w-full", "pl-14", "pr-6", "py-4", "md:py-5", "bg-slate-950/60", "border", "border-slate-800",
+                                        "rounded-2xl", "text-base", "md:text-lg", "font-medium", "text-white", "placeholder-slate-500",
+                                        "focus:outline-none", "focus:border-indigo-500/80", "focus:ring-4", "focus:ring-indigo-500/20",
+                                        "transition-all", "duration-300"
+                                    )
+                                    placeholder = "Mau ke mana? (Contoh: Tokyo, Zurich, Bali...)"
+                                    required = true
+                                }
+                            }
+                            button(type = ButtonType.submit) {
+                                classes = setOf(
+                                    "bg-gradient-to-r", "from-indigo-600", "via-indigo-500", "to-cyan-500",
+                                    "hover:from-indigo-500", "hover:to-cyan-400",
+                                    "text-white", "font-bold", "text-base", "md:text-lg", "py-4", "px-8", "rounded-2xl",
+                                    "shadow-lg", "shadow-indigo-500/25", "hover:shadow-indigo-500/50",
+                                    "active:scale-95", "transition-all", "duration-300",
+                                    "flex", "items-center", "justify-center", "gap-2", "cursor-pointer"
+                                )
+                                span { +"Cari Destinasi" }
+                                span("text-xl group-hover:translate-x-1 transition-transform duration-300") { +"🚀" }
+                            }
                         }
                     }
                 }
             }
 
-            // Loading State (Diatur oleh HTMX class indicator)
-            div("text-center my-8 htmx-indicator") {
+            // Radar Pulse Loading Animation
+            div("htmx-indicator flex-col items-center justify-center my-16 py-8 animate-slide-up") {
                 id = "loading-spinner"
-                div("animate-spin inline-block w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full")
-                p("text-slate-500 mt-3 font-medium") { +"Menganalisis data real-time..." }
+                div("relative flex items-center justify-center w-20 h-20") {
+                    div("absolute w-full h-full rounded-full bg-indigo-500/20 animate-ping")
+                    div("absolute w-12 h-12 rounded-full bg-indigo-500/40 animate-pulse")
+                    div("relative w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-indigo-500/50") {
+                        +"⚡"
+                    }
+                }
+                p("text-slate-300 mt-5 font-semibold text-sm tracking-wide animate-pulse") {
+                    +"Menganalisis cuaca real-time & menghitung estimasi..."
+                }
             }
 
-            // Container untuk hasil render dari WeatherWidget.kt
-            div {
+            div("min-h-[200px]") {
                 id = "widget-container"
             }
         }
