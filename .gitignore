@@ -1,0 +1,6 @@
+.grandle
+build
+.idea
+*.iml
+.env
+.git
