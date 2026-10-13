@@ -1,19 +1,21 @@
 package com.travelwise.network
 
 /**
- * Base contract interface for remote API clients in the TravelWise system.
+ * Kontrak utama untuk seluruh klien jaringan yang melakukan komunikasi HTTP ke Public API eksternal.
  *
- * Provides a standardized abstraction for executing HTTP requests to external endpoints.
+ * Antarmuka ini menerapkan prinsip abstraksi OOP untuk memisahkan logika komunikasi
+ * HTTP jaringan dari konsumen lapisan bisnis (Service Layer).
  *
+ * @param T Tipe data model hasil ekstraksi JSON respons API.
  * @author Farhan
  */
-interface ApiClient {
+interface ApiClient<T> {
 
     /**
-     * Executes a GET request to the specified HTTP/HTTPS target endpoint URL.
+     * Mengambil data dari endpoint API eksternal berdasarkan kata kunci pencarian.
      *
-     * @param url The target web endpoint address.
-     * @return Raw JSON or string response body from the server, or `null` if the request fails or encounters an error.
+     * @param query Parameter pencarian utama (seperti nama negara atau nama kota).
+     * @return Objek tipe [T] jika permintaan berhasil diproses, atau `null` jika terjadi kegagalan/error.
      */
-    suspend fun fetchData(url: String): String?
+    suspend fun fetchData(query: String): T?
 }
