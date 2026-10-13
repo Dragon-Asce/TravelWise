@@ -1,6 +1,41 @@
 package com.travelwise.view
 
+import com.travelwise.model.Country
+import com.travelwise.model.WeatherData
 import kotlinx.html.*
+
+object WeatherWidget {
+    fun renderSuccess(
+        html: HTML,
+        country: Country,
+        weather: WeatherData,
+        recommendations: List<String>,
+        dailyBudget: String = "$50 USD"
+    ) {
+        html.body {
+            weatherWidget(
+                countryName = country.name,
+                capital = country.capital,
+                population = String.format(java.util.Locale.US, "%,d", country.population),
+                currencyCode = country.currencyCode,
+                temperature = weather.temperature,
+                humidity = weather.humidity,
+                weatherDesc = "${weather.condition} (${weather.description})",
+                recommendedActivity = recommendations.joinToString(" • "),
+                dailyBudget = dailyBudget
+            )
+        }
+    }
+
+    fun renderError(html: HTML, message: String) {
+        html.body {
+            div("bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-xl mt-6 shadow-sm") {
+                p("font-bold text-lg mb-1") { +"⚠️ Informasi" }
+                p { +message }
+            }
+        }
+    }
+}
 
 // Parameter disesuaikan dengan data class yang dibuat tim backend (Country, WeatherData, dll)
 fun FlowContent.weatherWidget(
@@ -40,7 +75,7 @@ fun FlowContent.weatherWidget(
             }
             div("w-full bg-slate-200 rounded-full h-2.5 mt-4") {
                 div("bg-amber-400 h-2.5 rounded-full") {
-                    style = "width: $humidity%"
+                    style = "width: ${humidity.coerceIn(0, 100)}%"
                 }
             }
             p("text-slate-500 text-sm mt-1") { +"Tingkat Kelembapan: $humidity%" }

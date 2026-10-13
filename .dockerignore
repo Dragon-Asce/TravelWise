@@ -1,6 +1,6 @@
-.grandle
+.gradle
 build
 .idea
 *.iml
-
+.env
 .git

@@ -2,10 +2,13 @@ package com.travelwise.view
 
 import kotlinx.html.*
 
-fun HTML.mainLayout(content: DIV.() -> Unit) {
+fun HTML.mainLayout(pageContent: DIV.() -> Unit) {
     head {
         title { +"Travel Wise | Smart Travel Companion" }
-        meta { name = "viewport"; content = "width=device-width, initial-scale=1.0" }
+        meta {
+            this.name = "viewport"
+            this.content = "width=device-width, initial-scale=1.0"
+        }
         
         // Memuat Tailwind CSS melalui CDN
         script { src = "https://cdn.tailwindcss.com" }
@@ -34,7 +37,7 @@ fun HTML.mainLayout(content: DIV.() -> Unit) {
         
         // Konten Dinamis akan di-inject di sini
         div("container mx-auto p-4 md:p-8") {
-            content()
+            pageContent()
         }
     }
 }

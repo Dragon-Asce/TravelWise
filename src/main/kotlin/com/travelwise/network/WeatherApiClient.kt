@@ -3,10 +3,14 @@ package com.travelwise.network
 import com.travelwise.model.WeatherData
 import io.ktor.client.*
 import io.ktor.client.call.*
+import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
+import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
+import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 
 /**
  * DTO internal deskripsi cuaca OpenWeatherMap.
@@ -52,12 +56,27 @@ private data class OpenWeatherResponseDto(
  * @author Farhan
  */
 class WeatherApiClient(
-    private val apiKey: String = System.getenv("OPENWEATHER_API_KEY") ?: "YOUR_API_KEY_HERE",
-    private val client: HttpClient = CountryApiClient.defaultHttpClient
+    private val apiKey: String = System.getenv("OPENWEATHER_API_KEY") ?: "776e0acd12aee173a3abece2c9a46e7e",
+    private val client: HttpClient = defaultHttpClient
 ) : ApiClient<WeatherData> {
 
     companion object {
         private const val BASE_URL = "https://api.openweathermap.org/data/2.5/weather"
+
+        val defaultHttpClient by lazy {
+            HttpClient(CIO) {
+                install(ContentNegotiation) {
+                    json(Json {
+                        ignoreUnknownKeys = true
+                        isLenient = true
+                    })
+                }
+                install(HttpTimeout) {
+                    requestTimeoutMillis = 10000
+                    connectTimeoutMillis = 5000
+                }
+            }
+        }
     }
 
     /**

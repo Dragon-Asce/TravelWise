@@ -2,6 +2,12 @@ package com.travelwise.view
 
 import kotlinx.html.*
 
+object HomeView {
+    fun render(html: HTML) {
+        html.homeView()
+    }
+}
+
 fun HTML.homeView() {
     mainLayout {
         div("max-w-4xl mx-auto") {
@@ -11,7 +17,7 @@ fun HTML.homeView() {
                     +"Rencanakan Perjalananmu Lebih Cerdas" 
                 }
                 p("text-slate-600 text-lg") { 
-                    +"Masukkan negara atau kota tujuan untuk mendapatkan analisis cuaca, rekomendasi aktivitas, dan estimasi anggaran." 
+                    +"Masukkan negara tujuan untuk mendapatkan analisis cuaca, rekomendasi aktivitas, dan estimasi anggaran." 
                 }
             }
 
@@ -19,15 +25,15 @@ fun HTML.homeView() {
             div("bg-white p-6 md:p-8 rounded-xl shadow-lg border border-slate-100 mb-8") {
                 form {
                     // --- HTMX Attributes Setup ---
-                    attributes["hx-get"] = "/api/search" // Endpoint backend yang akan di-hit
+                    attributes["hx-post"] = "/search" // Endpoint backend yang akan di-hit
                     attributes["hx-target"] = "#widget-container" // Target elemen ID untuk meletakkan hasil
                     attributes["hx-indicator"] = "#loading-spinner" // ID elemen yang tampil saat proses loading
                     attributes["hx-swap"] = "innerHTML"
 
                     div("flex flex-col md:flex-row gap-4") {
-                        input(InputType.text, name = "destination") {
+                        input(InputType.text, name = "country") {
                             classes = setOf("flex-1", "border", "border-slate-300", "rounded-lg", "p-4", "text-lg", "focus:outline-none", "focus:ring-2", "focus:ring-blue-500", "focus:border-transparent")
-                            placeholder = "Contoh: Tokyo, Japan..."
+                            placeholder = "Contoh: Japan, Indonesia, France, Italy..."
                             required = true
                         }
                         button(type = ButtonType.submit) {
