@@ -5,6 +5,6 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - OPENWEATHER_API_KEY=${OPENWEATHER_API_KEY:-776e0acd12aee173a3abece2c9a46e7e}
+      - OPENWEATHER_API_KEY=${OPENWEATHER_API_KEY}
       - PORT=8080
     restart: unless-stopped

@@ -17,7 +17,7 @@ fun Application.module() {
         ?: "https://open.er-api.com/v6"
     val weatherApiKey = environment.config.propertyOrNull("api.openweather.apiKey")?.getString()
         ?: System.getenv("OPENWEATHER_API_KEY")
-        ?: "776e0acd12aee173a3abece2c9a46e7e"
+        ?: ""
 
     // 2. Inisialisasi API Clients
     val countryApiClient = CountryApiClient(baseUrl = countryApiUrl)

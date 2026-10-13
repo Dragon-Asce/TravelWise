@@ -56,7 +56,7 @@ private data class OpenWeatherResponseDto(
  * @author Farhan
  */
 class WeatherApiClient(
-    private val apiKey: String = System.getenv("OPENWEATHER_API_KEY") ?: "776e0acd12aee173a3abece2c9a46e7e",
+    private val apiKey: String = System.getenv("OPENWEATHER_API_KEY") ?: "",
     private val client: HttpClient = defaultHttpClient
 ) : ApiClient<WeatherData> {
 
