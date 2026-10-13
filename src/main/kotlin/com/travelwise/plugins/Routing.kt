@@ -2,12 +2,13 @@ package com.travelwise.plugins
 
 import com.travelwise.service.TravelPlanResult
 import com.travelwise.service.TravelService
-import com.travelwise.view.HomeView
-import com.travelwise.view.WeatherWidget
+import com.travelwise.view.homeView
+import com.travelwise.view.weatherWidget
 import io.ktor.server.application.*
 import io.ktor.server.html.*
 import io.ktor.server.request.*
 import io.ktor.server.routing.*
+import kotlinx.html.*
 
 suspend fun ApplicationCall.handleSearch(travelService: TravelService) {
     val parameters = if (request.httpMethod.value == "POST") {
@@ -19,7 +20,11 @@ suspend fun ApplicationCall.handleSearch(travelService: TravelService) {
 
     if (countryQuery.isEmpty()) {
         respondHtml {
-            WeatherWidget.renderError(this, "Silakan masukkan nama negara.")
+            body {
+                div("p-4 mb-4 text-sm text-red-400 rounded-2xl bg-red-950/50 border border-red-500/20 text-center backdrop-blur-md") {
+                    +"Silakan masukkan nama negara atau kota."
+                }
+            }
         }
         return
     }
@@ -27,18 +32,29 @@ suspend fun ApplicationCall.handleSearch(travelService: TravelService) {
     when (val result = travelService.getTravelPlan(countryQuery)) {
         is TravelPlanResult.Success -> {
             respondHtml {
-                WeatherWidget.renderSuccess(
-                    this,
-                    result.country,
-                    result.weather,
-                    result.recommendations,
-                    result.dailyBudget
-                )
+                body {
+                    weatherWidget(
+                        countryName = result.country.name,
+                        capital = result.country.capital,
+                        population = result.country.population.toString(),
+                        currencyCode = result.country.currencyCode,
+                        temperature = result.weather.temperature,
+                        humidity = result.weather.humidity,
+                        weatherDesc = result.weather.description,
+                        // Menggabungkan list rekomendasi menjadi satu string
+                        recommendedActivity = result.recommendations.joinToString(". "),
+                        dailyBudget = result.dailyBudget
+                    )
+                }
             }
         }
         is TravelPlanResult.Error -> {
             respondHtml {
-                WeatherWidget.renderError(this, result.message)
+                body {
+                    div("p-4 mb-4 text-sm text-amber-400 rounded-2xl bg-amber-950/50 border border-amber-500/20 text-center backdrop-blur-md animate-slide-up") {
+                        +result.message
+                    }
+                }
             }
         }
     }
@@ -49,7 +65,7 @@ fun Application.configureRouting(travelService: TravelService) {
         // Endpoint 1: Menampilkan Halaman Utama Web
         get("/") {
             call.respondHtml {
-                HomeView.render(this)
+                homeView()
             }
         }
 
