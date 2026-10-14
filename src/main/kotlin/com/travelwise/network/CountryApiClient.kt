@@ -1,361 +1,108 @@
 package com.travelwise.network
 
 import com.travelwise.model.Country
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
-import java.net.URI
-import java.time.Duration
+import io.ktor.client.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
 import kotlinx.serialization.json.*
 
+/**
+ * REST Countries v3.1 + kamus alias/offline fallback.
+ * Alur: alias -> nama kanonik -> API -> kamus -> anggap input sebagai kota.
+ */
 class CountryApiClient(
-    private val baseUrl: String = "https://api.restcountries.com/countries/v5",
-    private val apiKey: String = System.getenv("RESTCOUNTRIES_API_KEY") ?: "",
-    private val weatherApiKey: String = System.getenv("OPENWEATHER_API_KEY") ?: ""
-) {
-    private val client = HttpClient.newBuilder()
-        .followRedirects(HttpClient.Redirect.NORMAL)
-        .connectTimeout(Duration.ofSeconds(6))
-        .build()
+    private val baseUrl: String = "https://restcountries.com/v3.1",
+    private val client: HttpClient = HttpClients.default
+) : ApiClient<Country> {
 
-    // Kamus negara populer jika API eksternal unreachable / rate-limited
-    private val defaultCountries = mapOf(
-        "japan" to Country("Japan", "Tokyo", 125800000L, "JPY", "Japanese Yen"),
-        "jepang" to Country("Japan", "Tokyo", 125800000L, "JPY", "Japanese Yen"),
-        "indonesia" to Country("Indonesia", "Jakarta", 273800000L, "IDR", "Indonesian Rupiah"),
-        "france" to Country("France", "Paris", 67750000L, "EUR", "Euro"),
-        "prancis" to Country("France", "Paris", 67750000L, "EUR", "Euro"),
-        "united states" to Country("United States", "Washington, D.C.", 331900000L, "USD", "United States Dollar"),
-        "usa" to Country("United States", "Washington, D.C.", 331900000L, "USD", "United States Dollar"),
-        "amerika" to Country("United States", "Washington, D.C.", 331900000L, "USD", "United States Dollar"),
-        "united kingdom" to Country("United Kingdom", "London", 67081000L, "GBP", "British Pound"),
-        "uk" to Country("United Kingdom", "London", 67081000L, "GBP", "British Pound"),
-        "inggris" to Country("United Kingdom", "London", 67081000L, "GBP", "British Pound"),
-        "germany" to Country("Germany", "Berlin", 83200000L, "EUR", "Euro"),
-        "jerman" to Country("Germany", "Berlin", 83200000L, "EUR", "Euro"),
-        "italy" to Country("Italy", "Rome", 59000000L, "EUR", "Euro"),
-        "italia" to Country("Italy", "Rome", 59000000L, "EUR", "Euro"),
-        "singapore" to Country("Singapore", "Singapore", 5450000L, "SGD", "Singapore Dollar"),
-        "singapura" to Country("Singapore", "Singapore", 5450000L, "SGD", "Singapore Dollar"),
-        "malaysia" to Country("Malaysia", "Kuala Lumpur", 32700000L, "MYR", "Malaysian Ringgit"),
-        "south korea" to Country("South Korea", "Seoul", 51740000L, "KRW", "South Korean Won"),
-        "korea" to Country("South Korea", "Seoul", 51740000L, "KRW", "South Korean Won"),
-        "korea selatan" to Country("South Korea", "Seoul", 51740000L, "KRW", "South Korean Won"),
-        "china" to Country("China", "Beijing", 1412000000L, "CNY", "Chinese Yuan"),
-        "tiongkok" to Country("China", "Beijing", 1412000000L, "CNY", "Chinese Yuan"),
-        "australia" to Country("Australia", "Canberra", 25690000L, "AUD", "Australian Dollar"),
-        "thailand" to Country("Thailand", "Bangkok", 71600000L, "THB", "Thai Baht"),
-        "netherlands" to Country("Netherlands", "Amsterdam", 17530000L, "EUR", "Euro"),
-        "belanda" to Country("Netherlands", "Amsterdam", 17530000L, "EUR", "Euro")
+    private fun c(name: String, capital: String, pop: Long, cur: String, curName: String, cca2: String) =
+        Country(
+            name = name, capital = capital, population = pop,
+            currencyCode = cur, currencyName = curName, officialName = name,
+            flagUrl = "https://flagcdn.com/w160/${cca2.lowercase()}.png"
+        )
+
+    private val japan = c("Japan", "Tokyo", 125800000L, "JPY", "Japanese Yen", "JP")
+    private val indonesia = c("Indonesia", "Jakarta", 273800000L, "IDR", "Indonesian Rupiah", "ID")
+    private val france = c("France", "Paris", 67750000L, "EUR", "Euro", "FR")
+    private val usa = c("United States", "Washington, D.C.", 331900000L, "USD", "United States Dollar", "US")
+    private val uk = c("United Kingdom", "London", 67081000L, "GBP", "British Pound", "GB")
+    private val germany = c("Germany", "Berlin", 83200000L, "EUR", "Euro", "DE")
+    private val italy = c("Italy", "Rome", 59000000L, "EUR", "Euro", "IT")
+    private val singapore = c("Singapore", "Singapore", 5450000L, "SGD", "Singapore Dollar", "SG")
+    private val malaysia = c("Malaysia", "Kuala Lumpur", 32700000L, "MYR", "Malaysian Ringgit", "MY")
+    private val korea = c("South Korea", "Seoul", 51740000L, "KRW", "South Korean Won", "KR")
+    private val china = c("China", "Beijing", 1412000000L, "CNY", "Chinese Yuan", "CN")
+    private val australia = c("Australia", "Canberra", 25690000L, "AUD", "Australian Dollar", "AU")
+    private val thailand = c("Thailand", "Bangkok", 71600000L, "THB", "Thai Baht", "TH")
+    private val netherlands = c("Netherlands", "Amsterdam", 17530000L, "EUR", "Euro", "NL")
+
+    private val defaultCountries: Map<String, Country> = mapOf(
+        "japan" to japan, "jepang" to japan,
+        "indonesia" to indonesia,
+        "france" to france, "prancis" to france,
+        "united states" to usa, "usa" to usa, "amerika" to usa, "amerika serikat" to usa,
+        "united kingdom" to uk, "uk" to uk, "inggris" to uk,
+        "germany" to germany, "jerman" to germany,
+        "italy" to italy, "italia" to italy,
+        "singapore" to singapore, "singapura" to singapore,
+        "malaysia" to malaysia,
+        "south korea" to korea, "korea" to korea, "korea selatan" to korea,
+        "china" to china, "tiongkok" to china,
+        "australia" to australia,
+        "thailand" to thailand,
+        "netherlands" to netherlands, "belanda" to netherlands
     )
 
-    // Pemetaan kota populer ke kode negara (ISO Alpha-2)
-    private val popularCities = mapOf(
-        "bandung" to "ID",
-        "jakarta" to "ID",
-        "surabaya" to "ID",
-        "medan" to "ID",
-        "bali" to "ID",
-        "denpasar" to "ID",
-        "yogyakarta" to "ID",
-        "jogja" to "ID",
-        "semarang" to "ID",
-        "makassar" to "ID",
-        "tokyo" to "JP",
-        "osaka" to "JP",
-        "kyoto" to "JP",
-        "sapporo" to "JP",
-        "nagoya" to "JP",
-        "yokohama" to "JP",
-        "paris" to "FR",
-        "lyon" to "FR",
-        "marseille" to "FR",
-        "nice" to "FR",
-        "london" to "GB",
-        "manchester" to "GB",
-        "birmingham" to "GB",
-        "berlin" to "DE",
-        "munich" to "DE",
-        "frankfurt" to "DE",
-        "hamburg" to "DE",
-        "rome" to "IT",
-        "milan" to "IT",
-        "florence" to "IT",
-        "venice" to "IT",
-        "naples" to "IT",
-        "new york" to "US",
-        "los angeles" to "US",
-        "chicago" to "US",
-        "san francisco" to "US",
-        "sydney" to "AU",
-        "melbourne" to "AU",
-        "brisbane" to "AU",
-        "seoul" to "KR",
-        "busan" to "KR",
-        "beijing" to "CN",
-        "shanghai" to "CN",
-        "guangzhou" to "CN",
-        "bangkok" to "TH",
-        "kuala lumpur" to "MY",
-        "singapore" to "SG",
-        "amsterdam" to "NL"
-    )
+    override suspend fun fetchData(query: String): Country? = fetchCountry(query)
 
-    /**
-     * Mengambil profil negara berdasarkan kode negara (ISO Alpha-2, misal "ID", "JP").
-     */
-    fun fetchCountryByCode(code: String, targetCity: String = ""): Country? {
-        val cleanCode = code.trim().uppercase()
-        if (cleanCode.length != 2) return null
-
-        try {
-            val requestUri = if (baseUrl.contains("/v5")) {
-                if (apiKey.isNotBlank()) "$baseUrl/codes.alpha_2/$cleanCode?api-key=$apiKey"
-                else "$baseUrl/codes.alpha_2/$cleanCode"
-            } else {
-                "$baseUrl/alpha/$cleanCode"
-            }
-
-            val requestBuilder = HttpRequest.newBuilder()
-                .uri(URI.create(requestUri))
-                .header("User-Agent", "TravelWise/1.0")
-                .timeout(Duration.ofSeconds(5))
-                .GET()
-
-            if (apiKey.isNotBlank()) {
-                requestBuilder.header("Authorization", "Bearer $apiKey")
-            }
-
-            val response = client.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofString())
-            if (response.statusCode() == 200) {
-                val jsonElement = Json.parseToJsonElement(response.body())
-                val parsed = parseCountryFromJson(jsonElement, targetCity)
-                if (parsed != null) return parsed
-            }
-        } catch (e: Exception) {
-            println("[CountryApiClient] Gagal lookup by code '$cleanCode': ${e.message}")
-        }
-
-        // Fallback kamus lokal berdasarkan kode
-        for ((_, country) in defaultCountries) {
-            val currCode = country.currencyCode
-            if ((cleanCode == "ID" && country.name == "Indonesia") ||
-                (cleanCode == "JP" && country.name == "Japan") ||
-                (cleanCode == "US" && country.name == "United States") ||
-                (cleanCode == "GB" && country.name == "United Kingdom") ||
-                (cleanCode == "FR" && country.name == "France") ||
-                (cleanCode == "DE" && country.name == "Germany") ||
-                (cleanCode == "IT" && country.name == "Italy") ||
-                (cleanCode == "SG" && country.name == "Singapore") ||
-                (cleanCode == "MY" && country.name == "Malaysia") ||
-                (cleanCode == "KR" && country.name == "South Korea") ||
-                (cleanCode == "CN" && country.name == "China") ||
-                (cleanCode == "AU" && country.name == "Australia") ||
-                (cleanCode == "TH" && country.name == "Thailand") ||
-                (cleanCode == "NL" && country.name == "Netherlands")) {
-                return country.copy(targetCity = if (targetCity.isNotBlank()) targetCity else country.capital)
-            }
-        }
-
-        return null
-    }
-
-    /**
-     * Mengambil detail profil negara atau kota tujuan.
-     * Jika input berupa nama kota (seperti "Bandung", "Osaka"), secara cerdas akan
-     * mendeteksi negara asalnya (Indonesia, Japan) dan menetapkan kota tersebut sebagai target cuaca.
-     */
-    fun fetchCountry(name: String): Country? {
+    suspend fun fetchCountry(name: String): Country? {
         val trimmed = name.trim()
         if (trimmed.isEmpty()) return null
 
-        // 1. Coba cari langsung sebagai nama negara di REST Countries API v5
-        try {
-            val encodedName = java.net.URLEncoder.encode(trimmed, "UTF-8")
-            val requestUri = if (baseUrl.contains("/v5")) {
-                if (apiKey.isNotBlank()) "$baseUrl/names.common/$encodedName?api-key=$apiKey"
-                else "$baseUrl/names.common/$encodedName"
-            } else {
-                "$baseUrl/name/$encodedName"
-            }
+        val seed = defaultCountries[trimmed.lowercase()]
+        val searchName = seed?.name ?: trimmed
 
-            val requestBuilder = HttpRequest.newBuilder()
-                .uri(URI.create(requestUri))
-                .header("User-Agent", "TravelWise/1.0")
-                .timeout(Duration.ofSeconds(5))
-                .GET()
+        fetchFromApi(searchName)?.let { return it }
+        if (seed != null) return seed
 
-            if (apiKey.isNotBlank()) {
-                requestBuilder.header("Authorization", "Bearer $apiKey")
-            }
-
-            val response = client.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofString())
-            if (response.statusCode() == 200) {
-                val jsonElement = Json.parseToJsonElement(response.body())
-                val parsed = parseCountryFromJson(jsonElement, targetCity = "")
-                if (parsed != null) return parsed
-            }
-        } catch (_: Exception) {
-            // Lanjut ke pengecekan kota
-        }
-
-        // 2. Jika bukan nama negara, lakukan Geocoding via OpenWeather API untuk mendeteksi negara dari kota
-        if (weatherApiKey.isNotBlank()) {
-            try {
-                val encodedCity = java.net.URLEncoder.encode(trimmed, "UTF-8")
-                val geoUrl = "http://api.openweathermap.org/geo/1.0/direct?q=$encodedCity&limit=5&appid=$weatherApiKey"
-                val geoRequest = HttpRequest.newBuilder()
-                    .uri(URI.create(geoUrl))
-                    .timeout(Duration.ofSeconds(5))
-                    .GET()
-                    .build()
-
-                val geoResponse = client.send(geoRequest, HttpResponse.BodyHandlers.ofString())
-                if (geoResponse.statusCode() == 200) {
-                    val geoArray = Json.parseToJsonElement(geoResponse.body()).jsonArray
-                    if (geoArray.isNotEmpty()) {
-                        // Cari yang namanya paling mendekati input
-                        val match = geoArray.firstOrNull {
-                            it.jsonObject["name"]?.jsonPrimitive?.content?.equals(trimmed, ignoreCase = true) == true
-                        } ?: geoArray[0]
-
-                        val countryCode = match.jsonObject["country"]?.jsonPrimitive?.content
-                        val cityName = match.jsonObject["name"]?.jsonPrimitive?.content ?: trimmed
-
-                        if (!countryCode.isNullOrBlank()) {
-                            val country = fetchCountryByCode(countryCode, targetCity = cityName)
-                            if (country != null) {
-                                return country
-                            }
-                        }
-                    }
-                }
-            } catch (_: Exception) {
-                // Lanjut ke kamus kota lokal
-            }
-        }
-
-        // 3. Fallback: Cek kamus kota populer lokal
-        val localCityCode = popularCities[trimmed.lowercase()]
-        if (localCityCode != null) {
-            val country = fetchCountryByCode(localCityCode, targetCity = trimmed.replaceFirstChar { it.uppercase() })
-            if (country != null) return country
-        }
-
-        // 4. Fallback: CountriesNow API
-        try {
-            val encodedName = java.net.URLEncoder.encode(trimmed, "UTF-8")
-            val capitalRequest = HttpRequest.newBuilder()
-                .uri(URI.create("https://countriesnow.space/api/v0.1/countries/capital/q?country=$encodedName"))
-                .header("User-Agent", "TravelWise/1.0")
-                .timeout(Duration.ofSeconds(4))
-                .GET()
-                .build()
-
-            val capitalResponse = client.send(capitalRequest, HttpResponse.BodyHandlers.ofString())
-            if (capitalResponse.statusCode() == 200) {
-                val jsonObj = Json.parseToJsonElement(capitalResponse.body()).jsonObject
-                if (jsonObj["error"]?.jsonPrimitive?.boolean == false) {
-                    val data = jsonObj["data"]?.jsonObject
-                    val countryName = data?.get("name")?.jsonPrimitive?.content ?: trimmed
-                    val capital = data?.get("capital")?.jsonPrimitive?.content ?: "N/A"
-
-                    var currencyCode = "USD"
-                    try {
-                        val currRequest = HttpRequest.newBuilder()
-                            .uri(URI.create("https://countriesnow.space/api/v0.1/countries/currency/q?country=$encodedName"))
-                            .timeout(Duration.ofSeconds(3))
-                            .GET()
-                            .build()
-                        val currResponse = client.send(currRequest, HttpResponse.BodyHandlers.ofString())
-                        if (currResponse.statusCode() == 200) {
-                            val currJson = Json.parseToJsonElement(currResponse.body()).jsonObject
-                            currencyCode = currJson["data"]?.jsonObject?.get("currency")?.jsonPrimitive?.content ?: "USD"
-                        }
-                    } catch (_: Exception) {}
-
-                    return Country(
-                        name = countryName,
-                        capital = capital,
-                        population = defaultCountries[trimmed.lowercase()]?.population ?: 10000000L,
-                        currencyCode = currencyCode,
-                        currencyName = currencyCode,
-                        targetCity = capital
-                    )
-                }
-            }
-        } catch (_: Exception) {
-            // Lanjut ke default map
-        }
-
-        // 5. Fallback: Kamus Negara Lokal (Offline Safe)
-        val lookup = defaultCountries[trimmed.lowercase()]
-        if (lookup != null) {
-            return lookup.copy(targetCity = lookup.capital)
-        }
-
-        // 6. Fallback darurat jika lokasi sama sekali tidak dikenali
+        // Fallback umum: anggap input sebagai nama kota tujuan
+        val city = trimmed.replaceFirstChar { it.uppercase() }
         return Country(
-            name = trimmed.replaceFirstChar { it.uppercase() },
-            capital = trimmed.replaceFirstChar { it.uppercase() },
-            population = 5000000L,
-            currencyCode = "USD",
-            currencyName = "USD",
-            targetCity = trimmed.replaceFirstChar { it.uppercase() }
+            name = city, capital = city, population = 0L,
+            currencyCode = "USD", currencyName = "United States Dollar"
         )
     }
 
-    private fun parseCountryFromJson(jsonElement: JsonElement, targetCity: String): Country? {
-        // Format REST Countries v5: { "data": { "objects": [ ... ] } }
-        if (jsonElement is JsonObject && jsonElement.containsKey("data")) {
-            val objects = jsonElement["data"]?.jsonObject?.get("objects")?.jsonArray
-            if (objects != null && objects.isNotEmpty()) {
-                val firstObj = objects[0].jsonObject
-                val names = firstObj["names"]?.jsonObject
-                val officialName = names?.get("common")?.jsonPrimitive?.content ?: ""
+    private suspend fun fetchFromApi(searchName: String): Country? = try {
+        val text = client.get(baseUrl) {
+            url { appendPathSegments("name", searchName) }
+            parameter("fields", "name,capital,population,currencies,flags,cca2")
+        }.bodyAsText()
 
-                val capitals = firstObj["capitals"]?.jsonArray
-                val capital = capitals?.getOrNull(0)?.jsonObject?.get("name")?.jsonPrimitive?.content ?: "N/A"
+        val array = Json.parseToJsonElement(text).jsonArray
+        val item = (array.firstOrNull {
+            it.jsonObject["name"]?.jsonObject?.get("common")?.jsonPrimitive?.contentOrNull
+                .equals(searchName, ignoreCase = true)
+        } ?: array.firstOrNull())?.jsonObject
 
-                val population = firstObj["population"]?.jsonPrimitive?.long ?: 0L
+        if (item == null) null else {
+            val nameObj = item["name"]?.jsonObject
+            val common = nameObj?.get("common")?.jsonPrimitive?.contentOrNull ?: searchName
+            val official = nameObj?.get("official")?.jsonPrimitive?.contentOrNull ?: common
+            val capital = item["capital"]?.jsonArray?.firstOrNull()?.jsonPrimitive?.contentOrNull ?: "N/A"
+            val population = item["population"]?.jsonPrimitive?.longOrNull ?: 0L
+            val currencies = item["currencies"]?.jsonObject
+            val code = currencies?.keys?.firstOrNull() ?: "USD"
+            val curName = currencies?.get(code)?.jsonObject?.get("name")?.jsonPrimitive?.contentOrNull ?: code
+            val flag = item["flags"]?.jsonObject?.get("png")?.jsonPrimitive?.contentOrNull
+                ?: item["cca2"]?.jsonPrimitive?.contentOrNull?.let { "https://flagcdn.com/w160/${it.lowercase()}.png" }
 
-                val currencies = firstObj["currencies"]?.jsonArray
-                val firstCurr = currencies?.getOrNull(0)?.jsonObject
-                val currencyCode = firstCurr?.get("code")?.jsonPrimitive?.content ?: "USD"
-                val currencyName = firstCurr?.get("name")?.jsonPrimitive?.content ?: "United States Dollar"
-
-                return Country(
-                    name = officialName,
-                    capital = capital,
-                    population = population,
-                    currencyCode = currencyCode,
-                    currencyName = currencyName,
-                    targetCity = if (targetCity.isNotBlank()) targetCity else capital
-                )
-            }
+            Country(common, capital, population, code, curName, official, flag)
         }
-
-        // Format REST Countries v3.1: [ { ... } ]
-        if (jsonElement is JsonArray && jsonElement.isNotEmpty()) {
-            val firstItem = jsonElement[0].jsonObject
-            val officialName = firstItem["name"]?.jsonObject?.get("common")?.jsonPrimitive?.content ?: ""
-            val capital = firstItem["capital"]?.jsonArray?.get(0)?.jsonPrimitive?.content ?: "N/A"
-            val population = firstItem["population"]?.jsonPrimitive?.long ?: 0L
-
-            val currenciesObj = firstItem["currencies"]?.jsonObject
-            val currencyCode = currenciesObj?.keys?.firstOrNull() ?: "USD"
-            val currencyName = currenciesObj?.get(currencyCode)?.jsonObject?.get("name")?.jsonPrimitive?.content ?: "United States Dollar"
-
-            return Country(
-                name = officialName,
-                capital = capital,
-                population = population,
-                currencyCode = currencyCode,
-                currencyName = currencyName,
-                targetCity = if (targetCity.isNotBlank()) targetCity else capital
-            )
-        }
-
-        return null
+    } catch (e: Exception) {
+        println("[CountryApiClient] REST Countries gagal untuk '$searchName': ${e.message}")
+        null
     }
 }

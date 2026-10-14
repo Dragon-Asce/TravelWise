@@ -1,48 +1,106 @@
 package com.travelwise.service
 
+import com.travelwise.model.BudgetLine
+import com.travelwise.model.BudgetPlan
+import com.travelwise.model.BudgetTier
 import com.travelwise.model.Country
+import com.travelwise.model.Place
 import com.travelwise.model.WeatherData
 import com.travelwise.network.CountryApiClient
-import com.travelwise.network.WeatherApiClient
 import com.travelwise.network.ExchangeRateApiClient
+import com.travelwise.network.OverpassApiClient
+import com.travelwise.network.UnsplashApiClient
+import com.travelwise.network.WeatherApiClient
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 
 class TravelService(
     private val countryApiClient: CountryApiClient,
     private val weatherApiClient: WeatherApiClient,
-    private val exchangeRateApiClient: ExchangeRateApiClient
+    private val exchangeRateApiClient: ExchangeRateApiClient,
+    private val overpassApiClient: OverpassApiClient,
+    private val unsplashApiClient: UnsplashApiClient
 ) {
-    suspend fun getTravelPlan(destinationQuery: String): TravelPlanResult {
-        val country = countryApiClient.fetchCountry(destinationQuery)
-            ?: return TravelPlanResult.Error("Lokasi atau negara '$destinationQuery' tidak ditemukan.")
+    suspend fun getTravelPlan(
+        query: String,
+        tier: BudgetTier = BudgetTier.MODERATE
+    ): TravelPlanResult = coroutineScope {
+        val country = countryApiClient.fetchCountry(query)
+            ?: return@coroutineScope TravelPlanResult.Error("Negara '$query' tidak ditemukan.")
 
-        // Cek cuaca untuk kota tujuan (bisa kota spesifik seperti Bandung atau ibu kota negara)
-        val cityToQuery = if (country.targetCity.isNotBlank()) country.targetCity else country.capital
-        val weather = weatherApiClient.fetchWeather(cityToQuery)
-            ?: return TravelPlanResult.Error("Gagal mengambil data cuaca untuk '$cityToQuery'.")
+        val weather = weatherApiClient.fetchWeather(country.capital)
+            ?: return@coroutineScope TravelPlanResult.Error(
+                "Gagal mengambil data cuaca untuk ${country.capital}. Periksa nama kota dan OPENWEATHER_API_KEY."
+            )
 
-        // Menentukan kelas rekomendasi secara dinamis (Polimorfisme)
-        val recommender: ActivityRecommender = if (weather.isRainyOrStormy()) {
-            IndoorRecommender()
-        } else {
-            OutdoorRecommender()
+        // Polimorfisme: strategi rekomendasi dipilih dari kondisi cuaca
+        val isIndoor = weather.isRainyOrStormy()
+        val recommender: ActivityRecommender = if (isIndoor) IndoorRecommender() else OutdoorRecommender()
+
+        // Jalankan paralel: kurs, banner kota, dan POI Overpass
+        val ratesDeferred = async { exchangeRateApiClient.fetchData("USD") }
+        val bannerDeferred = async {
+            unsplashApiClient.fetchImage("${weather.cityName} travel", country.name)
+        }
+        val placesDeferred = async {
+            val lat = weather.lat
+            val lon = weather.lon
+            if (lat != null && lon != null) overpassApiClient.fetchPlaces(lat, lon) else emptyList()
         }
 
-        val activities = recommender.recommend(weather)
+        val picked = recommender.recommend(placesDeferred.await(), weather)
 
-        // Estimasi kurs jika target mata uang tersedia
-        val rate = exchangeRateApiClient.getExchangeRate("USD", country.currencyCode)
-        val dailyBudget = if (rate != null) {
-            val localAmount = String.format(java.util.Locale.US, "%,.2f", 50.0 * rate)
-            "$50 USD (~$localAmount ${country.currencyCode})"
-        } else {
-            "$50 USD"
-        }
+        // Lengkapi tiap tempat dengan foto Unsplash (paralel)
+        val places: List<Place> = picked.map { place ->
+            async {
+                place.copy(
+                    imageUrl = unsplashApiClient.fetchImage(
+                        "${place.name} ${weather.cityName}",
+                        "${place.category} ${weather.cityName}"
+                    )
+                )
+            }
+        }.awaitAll()
 
-        return TravelPlanResult.Success(
+        val budget = buildBudget(tier, country, ratesDeferred.await())
+
+        TravelPlanResult.Success(
             country = country,
             weather = weather,
-            recommendations = activities,
-            dailyBudget = dailyBudget
+            isIndoor = isIndoor,
+            recommenderLabel = recommender.label,
+            tips = recommender.activityTips(weather),
+            places = places,
+            bannerUrl = bannerDeferred.await(),
+            budget = budget
+        )
+    }
+
+    private fun buildBudget(tier: BudgetTier, country: Country, rates: Map<String, Double>?): BudgetPlan {
+        val localRate = rates?.get(country.currencyCode)
+        val idrRate = rates?.get("IDR")
+        val usd = tier.dailyUsd
+
+        fun line(label: String, share: Double) = BudgetLine(
+            label = label,
+            usd = usd * share,
+            local = localRate?.let { usd * share * it }
+        )
+
+        return BudgetPlan(
+            tier = tier,
+            dailyUsd = usd,
+            localCurrency = country.currencyCode,
+            dailyLocal = localRate?.let { usd * it },
+            dailyIdr = idrRate?.let { usd * it },
+            localPerUsd = localRate,
+            breakdown = listOf(
+                line("Akomodasi", 0.40),
+                line("Makan & minum", 0.30),
+                line("Transportasi", 0.15),
+                line("Aktivitas & tiket", 0.15)
+            )
         )
     }
 }
@@ -52,8 +110,12 @@ sealed class TravelPlanResult {
     data class Success(
         val country: Country,
         val weather: WeatherData,
-        val recommendations: List<String>,
-        val dailyBudget: String = "$50 USD"
+        val isIndoor: Boolean,
+        val recommenderLabel: String,
+        val tips: List<String>,
+        val places: List<Place>,
+        val bannerUrl: String,
+        val budget: BudgetPlan
     ) : TravelPlanResult()
 
     data class Error(val message: String) : TravelPlanResult()

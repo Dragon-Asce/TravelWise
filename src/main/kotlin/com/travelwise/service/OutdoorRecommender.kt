@@ -1,15 +1,20 @@
 package com.travelwise.service
 
+import com.travelwise.model.Place
 import com.travelwise.model.WeatherData
 
-// Implementasi 1: Aktivitas Luar Ruangan (Polimorfisme)
+// Implementasi 2: Aktivitas Luar Ruangan (Polimorfisme)
 class OutdoorRecommender : ActivityRecommender {
-    override fun recommend(weather: WeatherData): List<String> {
-        return listOf(
-            "Mengunjungi taman kota atau tempat bersejarah terbuka",
-            "Wisata kuliner street food lokal",
-            "Fotografi pemandangan di sekitar kota"
-        )
+    override val label = "Aktivitas Outdoor"
+
+    override fun recommend(places: List<Place>, weather: WeatherData): List<Place> =
+        places.filter { it.category in listOf("attraction", "park", "historic", "nature") }.diversified(6)
+
+    override fun activityTips(weather: WeatherData): List<String> = buildList {
+        add("Jelajahi taman kota atau tempat bersejarah terbuka")
+        add("Coba wisata kuliner street food lokal")
+        add("Ambil foto pemandangan di sekitar kota")
+        if (weather.temperature >= 32) add("Cuaca panas: bawa air minum, tabir surya, dan hindari tengah hari")
+        if (weather.temperature <= 10) add("Cuaca dingin: kenakan jaket hangat berlapis")
     }
 }
-
