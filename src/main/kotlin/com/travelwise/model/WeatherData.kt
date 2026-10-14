@@ -8,7 +8,8 @@ data class WeatherData(
     val description: String,
     val windSpeed: Double = 0.0,
     val lat: Double? = null,
-    val lon: Double? = null
+    val lon: Double? = null,
+    val countryCode: String? = null
 ) {
     fun isRainyOrStormy(): Boolean {
         val cond = condition.lowercase()

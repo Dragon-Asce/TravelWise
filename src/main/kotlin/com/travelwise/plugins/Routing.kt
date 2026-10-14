@@ -78,7 +78,8 @@ suspend fun ApplicationCall.handleSearch(travelService: TravelService) {
                         destinationDescription = "Analisis destinasi otomatis berbasis telemetri cuaca dan lokasi.",
                         imageUrl = result.bannerUrl.ifBlank {
                             "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80"
-                        }
+                        },
+                        targetCity = result.targetCity
                     )
                 }
             }

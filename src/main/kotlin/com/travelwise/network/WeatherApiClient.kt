@@ -32,11 +32,18 @@ private data class CoordDto(
 )
 
 @Serializable
+private data class SysDto(
+    @SerialName("country") val country: String? = null
+)
+
+@Serializable
 private data class OpenWeatherResponseDto(
     @SerialName("weather") val weather: List<WeatherDescriptionDto>? = emptyList(),
     @SerialName("main") val main: MainWeatherDto? = null,
     @SerialName("wind") val wind: WindDto? = null,
-    @SerialName("coord") val coord: CoordDto? = null
+    @SerialName("coord") val coord: CoordDto? = null,
+    @SerialName("sys") val sys: SysDto? = null,
+    @SerialName("name") val name: String? = null
 )
 
 class WeatherApiClient(
@@ -69,14 +76,15 @@ class WeatherApiClient(
             val primary = response.weather?.firstOrNull()
 
             WeatherData(
-                cityName = query,
+                cityName = response.name ?: query,
                 temperature = mainInfo.temp,
                 humidity = mainInfo.humidity,
                 condition = primary?.main ?: "Clear",
                 description = primary?.description ?: "Tidak ada deskripsi",
                 windSpeed = response.wind?.speed ?: 0.0,
                 lat = response.coord?.lat,
-                lon = response.coord?.lon
+                lon = response.coord?.lon,
+                countryCode = response.sys?.country
             )
         } catch (e: Exception) {
             println("[WeatherApiClient] Error: ${e.localizedMessage}")
