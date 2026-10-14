@@ -3,46 +3,44 @@ package com.travelwise.network
 import com.travelwise.model.WeatherData
 import io.ktor.client.*
 import io.ktor.client.call.*
-import io.ktor.client.plugins.*
 import io.ktor.client.request.*
+import io.ktor.client.statement.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 private data class WeatherDescriptionDto(
-    @SerialName("main") val main: String,
-    @SerialName("description") val description: String
+    @SerialName("main") val main: String = "Clear",
+    @SerialName("description") val description: String = "Tidak ada deskripsi"
 )
 
 @Serializable
 private data class MainWeatherDto(
-    @SerialName("temp") val temp: Double,
-    @SerialName("humidity") val humidity: Int
+    @SerialName("temp") val temp: Double = 0.0,
+    @SerialName("humidity") val humidity: Int = 0
 )
 
 @Serializable
-private data class WindDto(@SerialName("speed") val speed: Double? = 0.0)
+private data class WindDto(
+    @SerialName("speed") val speed: Double? = 0.0
+)
 
 @Serializable
 private data class CoordDto(
-    @SerialName("lat") val lat: Double,
-    @SerialName("lon") val lon: Double
+    @SerialName("lat") val lat: Double? = null,
+    @SerialName("lon") val lon: Double? = null
 )
 
 @Serializable
 private data class OpenWeatherResponseDto(
-    @SerialName("weather") val weather: List<WeatherDescriptionDto>,
-    @SerialName("main") val main: MainWeatherDto,
+    @SerialName("weather") val weather: List<WeatherDescriptionDto>? = emptyList(),
+    @SerialName("main") val main: MainWeatherDto? = null,
     @SerialName("wind") val wind: WindDto? = null,
     @SerialName("coord") val coord: CoordDto? = null
 )
 
-/**
- * Cuaca real-time OpenWeatherMap. Sekarang juga mengembalikan koordinat (lat/lon)
- * yang dipakai Overpass API untuk mencari tempat di sekitar kota.
- */
 class WeatherApiClient(
-    private val apiKey: String = System.getenv("OPENWEATHER_API_KEY") ?: "",
+    private val apiKey: String = System.getenv("OPENWEATHER_API_KEY") ?: "776e0acd12aee173a3abece2c9a46e7e",
     private val client: HttpClient = HttpClients.default
 ) : ApiClient<WeatherData> {
 
@@ -54,35 +52,33 @@ class WeatherApiClient(
         if (query.isBlank() || query == "N/A") return null
 
         return try {
-            val response: OpenWeatherResponseDto = client.get(BASE_URL) {
+            val httpResponse: HttpResponse = client.get(BASE_URL) {
                 parameter("q", query)
-                parameter("appid", apiKey)
+                parameter("appid", apiKey.ifBlank { "776e0acd12aee173a3abece2c9a46e7e" })
                 parameter("units", "metric")
-            }.body()
+            }
 
-            val primary = response.weather.firstOrNull()
+            if (httpResponse.status.value != 200) {
+                println("[WeatherApiClient] Client Error (${httpResponse.status.value}): Kota '$query' tidak ditemukan.")
+                return null
+            }
+
+            val response: OpenWeatherResponseDto = httpResponse.body()
+            val mainInfo = response.main ?: return null
+            val primary = response.weather?.firstOrNull()
 
             WeatherData(
                 cityName = query,
-                temperature = response.main.temp,
-                humidity = response.main.humidity,
+                temperature = mainInfo.temp,
+                humidity = mainInfo.humidity,
                 condition = primary?.main ?: "Clear",
                 description = primary?.description ?: "Tidak ada deskripsi",
                 windSpeed = response.wind?.speed ?: 0.0,
                 lat = response.coord?.lat,
                 lon = response.coord?.lon
             )
-        } catch (e: ClientRequestException) {
-            println("[WeatherApiClient] Client Error (${e.response.status.value}): Kota '$query' tidak ditemukan atau API Key tidak valid.")
-            null
-        } catch (e: ServerResponseException) {
-            println("[WeatherApiClient] Server Error (${e.response.status.value})")
-            null
-        } catch (e: HttpRequestTimeoutException) {
-            println("[WeatherApiClient] Timeout ke OpenWeatherMap.")
-            null
         } catch (e: Exception) {
-            println("[WeatherApiClient] Error tidak terduga: ${e.localizedMessage}")
+            println("[WeatherApiClient] Error: ${e.localizedMessage}")
             null
         }
     }

@@ -14,7 +14,7 @@ import kotlinx.serialization.json.*
  * karena source.unsplash.com sudah dihentikan.
  */
 class UnsplashApiClient(
-    private val accessKey: String = System.getenv("UNSPLASH_API_KEY") ?: "",
+    private val accessKey: String = System.getenv("UNSPLASH_API_KEY") ?: "poZD4zROka_9HjAXdLC3sZnmBDs938bcXzOF1sKAeFU",
     private val client: HttpClient = HttpClients.default
 ) : ApiClient<String> {
 
