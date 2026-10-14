@@ -9,14 +9,15 @@ import java.time.Duration
 import kotlinx.serialization.json.*
 
 class CountryApiClient(
-    private val baseUrl: String = "https://restcountries.com/v3.1"
+    private val baseUrl: String = "https://api.restcountries.com/countries/v5",
+    private val apiKey: String = System.getenv("RESTCOUNTRIES_API_KEY") ?: ""
 ) {
     private val client = HttpClient.newBuilder()
         .followRedirects(HttpClient.Redirect.NORMAL)
-        .connectTimeout(Duration.ofSeconds(5))
+        .connectTimeout(Duration.ofSeconds(6))
         .build()
 
-    // Kamus negara populer jika REST Countries API v3.1 deprecated/unreachable
+    // Kamus negara populer jika API eksternal unreachable / rate-limited
     private val defaultCountries = mapOf(
         "japan" to Country("Japan", "Tokyo", 125800000L, "JPY", "Japanese Yen"),
         "jepang" to Country("Japan", "Tokyo", 125800000L, "JPY", "Japanese Yen"),
@@ -51,21 +52,61 @@ class CountryApiClient(
         val trimmed = name.trim()
         if (trimmed.isEmpty()) return null
 
-        // 1. Coba REST Countries API
+        // 1. Prioritas Utama: REST Countries API (Mendukung v5 & legacy v3.1)
         try {
             val encodedName = java.net.URLEncoder.encode(trimmed, "UTF-8")
-            val request = HttpRequest.newBuilder()
-                .uri(URI.create("$baseUrl/name/$encodedName"))
-                .header("User-Agent", "TravelWise/1.0")
-                .timeout(Duration.ofSeconds(4))
-                .GET()
-                .build()
+            val requestUri = if (baseUrl.contains("/v5")) {
+                if (apiKey.isNotBlank()) "$baseUrl/names.common/$encodedName?api-key=$apiKey"
+                else "$baseUrl/names.common/$encodedName"
+            } else {
+                "$baseUrl/name/$encodedName"
+            }
 
-            val response = client.send(request, HttpResponse.BodyHandlers.ofString())
-            if (response.statusCode() == 200 && !response.body().contains("deprecated")) {
-                val jsonArray = Json.parseToJsonElement(response.body()).jsonArray
-                if (jsonArray.isNotEmpty()) {
-                    val firstItem = jsonArray[0].jsonObject
+            val requestBuilder = HttpRequest.newBuilder()
+                .uri(URI.create(requestUri))
+                .header("User-Agent", "TravelWise/1.0")
+                .timeout(Duration.ofSeconds(5))
+                .GET()
+
+            if (apiKey.isNotBlank()) {
+                requestBuilder.header("Authorization", "Bearer $apiKey")
+            }
+
+            val response = client.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofString())
+            if (response.statusCode() == 200) {
+                val jsonElement = Json.parseToJsonElement(response.body())
+
+                // Format REST Countries v5: { "data": { "objects": [ ... ] } }
+                if (jsonElement is JsonObject && jsonElement.containsKey("data")) {
+                    val objects = jsonElement["data"]?.jsonObject?.get("objects")?.jsonArray
+                    if (objects != null && objects.isNotEmpty()) {
+                        val firstObj = objects[0].jsonObject
+                        val names = firstObj["names"]?.jsonObject
+                        val officialName = names?.get("common")?.jsonPrimitive?.content ?: trimmed
+
+                        val capitals = firstObj["capitals"]?.jsonArray
+                        val capital = capitals?.getOrNull(0)?.jsonObject?.get("name")?.jsonPrimitive?.content ?: "N/A"
+
+                        val population = firstObj["population"]?.jsonPrimitive?.long ?: 0L
+
+                        val currencies = firstObj["currencies"]?.jsonArray
+                        val firstCurr = currencies?.getOrNull(0)?.jsonObject
+                        val currencyCode = firstCurr?.get("code")?.jsonPrimitive?.content ?: "USD"
+                        val currencyName = firstCurr?.get("name")?.jsonPrimitive?.content ?: "United States Dollar"
+
+                        return Country(
+                            name = officialName,
+                            capital = capital,
+                            population = population,
+                            currencyCode = currencyCode,
+                            currencyName = currencyName
+                        )
+                    }
+                }
+
+                // Format REST Countries v3.1 (Array root): [ { ... } ]
+                if (jsonElement is JsonArray && jsonElement.isNotEmpty()) {
+                    val firstItem = jsonElement[0].jsonObject
                     val officialName = firstItem["name"]?.jsonObject?.get("common")?.jsonPrimitive?.content ?: trimmed
                     val capital = firstItem["capital"]?.jsonArray?.get(0)?.jsonPrimitive?.content ?: "N/A"
                     val population = firstItem["population"]?.jsonPrimitive?.long ?: 0L
@@ -84,10 +125,10 @@ class CountryApiClient(
                 }
             }
         } catch (_: Exception) {
-            // Lanjut ke fallback
+            // Lanjut ke fallback jika REST Countries v5 mengalami kendala
         }
 
-        // 2. Fallback ke CountriesNow API
+        // 2. Fallback: CountriesNow API
         try {
             val encodedName = java.net.URLEncoder.encode(trimmed, "UTF-8")
             val capitalRequest = HttpRequest.newBuilder()
@@ -132,13 +173,13 @@ class CountryApiClient(
             // Lanjut ke default map
         }
 
-        // 3. Fallback ke Kamus Lokal (Offline Safe)
+        // 3. Fallback: Kamus Lokal (Offline Safe)
         val lookup = defaultCountries[trimmed.lowercase()]
         if (lookup != null) {
             return lookup
         }
 
-        // 4. Fallback umum: anggap nama input sebagai kota tujuan
+        // 4. Fallback umum: anggap nama input sebagai kota/tujuan
         return Country(
             name = trimmed.replaceFirstChar { it.uppercase() },
             capital = trimmed.replaceFirstChar { it.uppercase() },
