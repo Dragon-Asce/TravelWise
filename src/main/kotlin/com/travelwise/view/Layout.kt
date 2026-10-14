@@ -2,7 +2,7 @@ package com.travelwise.view
 
 import kotlinx.html.*
 
-fun HTML.mainLayout(content: DIV.() -> Unit) {
+fun HTML.mainLayout(pageContent: DIV.() -> Unit) {
     head {
         title { +"TravelWise | Smart Interactive Travel Companion" }
         meta { name = "viewport"; content = "width=device-width, initial-scale=1.0" }
@@ -142,7 +142,7 @@ fun HTML.mainLayout(content: DIV.() -> Unit) {
         }
         
         div("container mx-auto px-4 py-8 md:py-12 relative z-10") {
-            content()
+            pageContent()
         }
 
         footer("mt-20 py-8 text-center text-slate-500 text-sm border-t border-slate-800/60 backdrop-blur-md bg-slate-950/40") {

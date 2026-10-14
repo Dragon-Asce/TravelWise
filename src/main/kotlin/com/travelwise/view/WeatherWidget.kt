@@ -10,15 +10,25 @@ fun FlowContent.weatherWidget(
     temperature: Double,
     humidity: Int,
     weatherDesc: String,             // Misal: "Rainy", "Sunny", "Snowy", "Cloudy"
-    seasonName: String,              // Misal: "Musim Semi (Spring)", "Musim Panas (Summer)", "Musim Gugur (Autumn)", "Musim Dingin (Winter)"
-    seasonDesc: String,              // Misal: "Bunga sakura sedang bermekaran di sepanjang taman kota."
-    destinationDescription: String,  // Deskripsi tempat / daya tarik wisata
-    imageUrl: String,                // URL Foto Lanskap Destinasi
+    seasonName: String = "Tropis / 4 Musim",
+    seasonDesc: String = "Kondisi iklim dan cuaca saat ini dipengaruhi oleh letak geografis wilayah.",
+    destinationDescription: String = "Destinasi populer dengan pesona alam, kebudayaan yang kaya, dan ragam kuliner khas.",
+    imageUrl: String = "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1200&q=80",
     recommendedActivity: String,
     dailyBudget: String,
-    isOutdoor: Boolean = true
+    isOutdoor: Boolean = true,
+    targetCity: String = capital
 ) {
     div("space-y-6 mt-4 animate-slide-up") {
+
+        // Menentukan label judul lokasi (Kota Tujuan, Negara)
+        val locationTitle = if (targetCity.isNotBlank() && !targetCity.equals(capital, ignoreCase = true) && !targetCity.equals(countryName, ignoreCase = true)) {
+            "$targetCity, $countryName"
+        } else if (capital.isNotBlank() && capital != "N/A" && !capital.equals(countryName, ignoreCase = true)) {
+            "$capital, $countryName"
+        } else {
+            countryName
+        }
 
         // ==========================================
         // 1. HERO DESTINATION BANNER (Foto Tempat + Profil)
@@ -37,14 +47,19 @@ fun FlowContent.weatherWidget(
                 div("max-w-2xl space-y-2") {
                     div("flex items-center gap-2.5 flex-wrap mb-2") {
                         span("px-3 py-1 rounded-full bg-sky-500/20 backdrop-blur-md text-sky-300 text-xs font-bold border border-sky-400/30") {
-                            +"📍 $capital, $countryName"
+                            +"📍 $locationTitle"
+                        }
+                        if (targetCity.isNotBlank() && !targetCity.equals(capital, ignoreCase = true)) {
+                            span("px-3 py-1 rounded-full bg-blue-500/20 backdrop-blur-md text-blue-300 text-xs font-bold border border-blue-400/30") {
+                                +"🏛️ Ibu Kota: $capital"
+                            }
                         }
                         span("px-3 py-1 rounded-full bg-emerald-500/20 backdrop-blur-md text-emerald-300 text-xs font-bold border border-emerald-400/30") {
                             +"💱 Mata Uang: $currencyCode"
                         }
                     }
                     h2("text-3xl md:text-5xl font-black text-white tracking-tight drop-shadow-md") {
-                        +"$capital, $countryName"
+                        +"$locationTitle"
                     }
                     p("text-slate-300 text-sm md:text-base leading-relaxed line-clamp-2 md:line-clamp-none backdrop-blur-sm bg-slate-950/30 p-3 rounded-2xl border border-white/10") {
                         +destinationDescription

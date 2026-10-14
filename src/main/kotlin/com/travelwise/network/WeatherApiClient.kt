@@ -38,6 +38,11 @@ private data class WindDto(
     @SerialName("speed") val speed: Double? = 0.0
 )
 
+@Serializable
+private data class SysDto(
+    @SerialName("country") val country: String? = null
+)
+
 /**
  * DTO internal utama untuk struktur JSON respons OpenWeatherMap API.
  */
@@ -45,7 +50,9 @@ private data class WindDto(
 private data class OpenWeatherResponseDto(
     @SerialName("weather") val weather: List<WeatherDescriptionDto>,
     @SerialName("main") val main: MainWeatherDto,
-    @SerialName("wind") val wind: WindDto? = null
+    @SerialName("wind") val wind: WindDto? = null,
+    @SerialName("sys") val sys: SysDto? = null,
+    @SerialName("name") val name: String? = null
 )
 
 /**
@@ -98,12 +105,13 @@ class WeatherApiClient(
             val primaryWeather = response.weather.firstOrNull()
 
             WeatherData(
-                cityName = query,
+                cityName = response.name ?: query,
                 temperature = response.main.temp,
                 humidity = response.main.humidity,
                 condition = primaryWeather?.main ?: "Clear",
                 description = primaryWeather?.description ?: "Tidak ada deskripsi",
-                windSpeed = response.wind?.speed ?: 0.0
+                windSpeed = response.wind?.speed ?: 0.0,
+                countryCode = response.sys?.country
             )
         } catch (e: ClientRequestException) {
             println("[WeatherApiClient] Client Error (${e.response.status.value}): Kota '$query' tidak ditemukan atau API Key tidak valid.")

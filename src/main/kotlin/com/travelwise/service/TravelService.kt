@@ -11,12 +11,14 @@ class TravelService(
     private val weatherApiClient: WeatherApiClient,
     private val exchangeRateApiClient: ExchangeRateApiClient
 ) {
-    suspend fun getTravelPlan(countryName: String): TravelPlanResult {
-        val country = countryApiClient.fetchCountry(countryName)
-            ?: return TravelPlanResult.Error("Negara '$countryName' tidak ditemukan.")
+    suspend fun getTravelPlan(destinationQuery: String): TravelPlanResult {
+        val country = countryApiClient.fetchCountry(destinationQuery)
+            ?: return TravelPlanResult.Error("Lokasi atau negara '$destinationQuery' tidak ditemukan.")
 
-        val weather = weatherApiClient.fetchWeather(country.capital)
-            ?: return TravelPlanResult.Error("Gagal mengambil data cuaca untuk ibu kota ${country.capital}.")
+        // Cek cuaca untuk kota tujuan (bisa kota spesifik seperti Bandung atau ibu kota negara)
+        val cityToQuery = if (country.targetCity.isNotBlank()) country.targetCity else country.capital
+        val weather = weatherApiClient.fetchWeather(cityToQuery)
+            ?: return TravelPlanResult.Error("Gagal mengambil data cuaca untuk '$cityToQuery'.")
 
         // Menentukan kelas rekomendasi secara dinamis (Polimorfisme)
         val recommender: ActivityRecommender = if (weather.isRainyOrStormy()) {

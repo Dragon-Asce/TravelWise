@@ -6,7 +6,8 @@ data class WeatherData(
     val humidity: Int,
     val condition: String,
     val description: String,
-    val windSpeed: Double = 0.0
+    val windSpeed: Double = 0.0,
+    val countryCode: String? = null
 ) {
     fun isRainyOrStormy(): Boolean {
         val cond = condition.lowercase()
@@ -16,4 +17,3 @@ data class WeatherData(
                cond.contains("thunderstorm")
     }
 }
-

@@ -5,6 +5,6 @@ data class Country(
     val capital: String,
     val population: Long,
     val currencyCode: String = "USD",
-    val currencyName: String = "United States Dollar"
+    val currencyName: String = "United States Dollar",
+    val targetCity: String = capital
 )
-

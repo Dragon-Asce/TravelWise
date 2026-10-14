@@ -33,17 +33,20 @@ suspend fun ApplicationCall.handleSearch(travelService: TravelService) {
         is TravelPlanResult.Success -> {
             respondHtml {
                 body {
+                    val formattedPopulation = String.format(java.util.Locale.US, "%,d", result.country.population)
                     weatherWidget(
                         countryName = result.country.name,
                         capital = result.country.capital,
-                        population = result.country.population.toString(),
+                        population = formattedPopulation,
                         currencyCode = result.country.currencyCode,
                         temperature = result.weather.temperature,
                         humidity = result.weather.humidity,
                         weatherDesc = result.weather.description,
                         // Menggabungkan list rekomendasi menjadi satu string
                         recommendedActivity = result.recommendations.joinToString(". "),
-                        dailyBudget = result.dailyBudget
+                        dailyBudget = result.dailyBudget,
+                        isOutdoor = !result.weather.isRainyOrStormy(),
+                        targetCity = result.country.targetCity
                     )
                 }
             }

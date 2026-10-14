@@ -23,7 +23,11 @@ fun Application.module() {
         ?: ""
 
     // 2. Inisialisasi API Clients
-    val countryApiClient = CountryApiClient(baseUrl = countryApiUrl, apiKey = countryApiKey)
+    val countryApiClient = CountryApiClient(
+        baseUrl = countryApiUrl,
+        apiKey = countryApiKey,
+        weatherApiKey = weatherApiKey
+    )
     val exchangeRateApiClient = ExchangeRateApiClient(baseUrl = exchangeRateApiUrl)
     val weatherApiClient = WeatherApiClient(apiKey = weatherApiKey)
 
