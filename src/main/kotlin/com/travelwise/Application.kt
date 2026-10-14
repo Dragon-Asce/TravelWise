@@ -12,7 +12,10 @@ fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 fun Application.module() {
     // 1. Baca konfigurasi dari application.conf (opsional, jika tidak memakai default value)
     val countryApiUrl = environment.config.propertyOrNull("api.restcountries.baseUrl")?.getString() 
-        ?: "https://restcountries.com/v3.1"
+        ?: "https://api.restcountries.com/countries/v5"
+    val countryApiKey = environment.config.propertyOrNull("api.restcountries.apiKey")?.getString()
+        ?: System.getenv("RESTCOUNTRIES_API_KEY")
+        ?: ""
     val exchangeRateApiUrl = environment.config.propertyOrNull("api.exchangerate.baseUrl")?.getString() 
         ?: "https://open.er-api.com/v6"
     val weatherApiKey = environment.config.propertyOrNull("api.openweather.apiKey")?.getString()
@@ -20,7 +23,7 @@ fun Application.module() {
         ?: ""
 
     // 2. Inisialisasi API Clients
-    val countryApiClient = CountryApiClient(baseUrl = countryApiUrl)
+    val countryApiClient = CountryApiClient(baseUrl = countryApiUrl, apiKey = countryApiKey)
     val exchangeRateApiClient = ExchangeRateApiClient(baseUrl = exchangeRateApiUrl)
     val weatherApiClient = WeatherApiClient(apiKey = weatherApiKey)
 
