@@ -2,12 +2,7 @@ package com.travelwise.view
 
 import kotlinx.html.*
 
-<<<<<<< HEAD
-fun HTML.mainLayout(bodyContent: DIV.() -> Unit) {
-=======
-// PERBAIKAN 1: Mengubah nama parameter dari 'content' menjadi 'pageContent'
 fun HTML.mainLayout(pageContent: DIV.() -> Unit) {
->>>>>>> fix/docker-and-ui-telemetry
     head {
         title { +"TRAVELWISE // TACTICAL TELEMETRY ENGINE" }
         meta { name = "viewport"; content = "width=device-width, initial-scale=1.0" }
@@ -113,12 +108,7 @@ fun HTML.mainLayout(pageContent: DIV.() -> Unit) {
         }
 
         div("container mx-auto px-4 py-8 md:py-12 relative z-10") {
-<<<<<<< HEAD
-            bodyContent()
-=======
-            // PERBAIKAN 1: Memanggil pageContent()
             pageContent()
->>>>>>> fix/docker-and-ui-telemetry
         }
 
         footer("mt-20 py-8 border-t-2 border-slate-800 bg-[#090a0c] text-slate-500 text-xs font-mono text-center") {
