@@ -26,13 +26,37 @@ class TravelService(
         query: String,
         tier: BudgetTier = BudgetTier.MODERATE
     ): TravelPlanResult = coroutineScope {
-        val country = countryApiClient.fetchCountry(query)
-            ?: return@coroutineScope TravelPlanResult.Error("Negara '$query' tidak ditemukan.")
+        var country = countryApiClient.fetchCountry(query)
+        val weather: WeatherData
+        val targetCity: String
 
-        val weather = weatherApiClient.fetchWeather(country.capital)
-            ?: return@coroutineScope TravelPlanResult.Error(
-                "Gagal mengambil data cuaca untuk ${country.capital}. Periksa nama kota dan OPENWEATHER_API_KEY."
+        if (country != null) {
+            val capitalCity = if (country.capital != "N/A" && country.capital.isNotBlank()) country.capital else query
+            val fetchedWeather = weatherApiClient.fetchWeather(capitalCity)
+                ?: weatherApiClient.fetchWeather(query)
+                ?: return@coroutineScope TravelPlanResult.Error(
+                    "Gagal mengambil data cuaca untuk ${capitalCity}. Periksa nama kota dan OPENWEATHER_API_KEY."
+                )
+            weather = fetchedWeather
+            targetCity = if (country.capital != "N/A" && country.capital.isNotBlank()) country.capital else weather.cityName
+        } else {
+            val cityWeather = weatherApiClient.fetchWeather(query)
+                ?: return@coroutineScope TravelPlanResult.Error("Destinasi '$query' tidak ditemukan.")
+            weather = cityWeather
+            targetCity = cityWeather.cityName
+
+            val alpha2 = cityWeather.countryCode
+            val countryByCode = if (!alpha2.isNullOrBlank()) {
+                countryApiClient.fetchByAlpha2(alpha2)
+            } else null
+
+            country = countryByCode ?: Country(
+                name = cityWeather.cityName,
+                capital = cityWeather.cityName,
+                population = 0L,
+                currencyCode = "USD"
             )
+        }
 
         // Polimorfisme: strategi rekomendasi dipilih dari kondisi cuaca
         val isIndoor = weather.isRainyOrStormy()
@@ -73,7 +97,8 @@ class TravelService(
             tips = recommender.activityTips(weather),
             places = places,
             bannerUrl = bannerDeferred.await(),
-            budget = budget
+            budget = budget,
+            targetCity = targetCity
         )
     }
 
@@ -115,7 +140,8 @@ sealed class TravelPlanResult {
         val tips: List<String>,
         val places: List<Place>,
         val bannerUrl: String,
-        val budget: BudgetPlan
+        val budget: BudgetPlan,
+        val targetCity: String = country.capital
     ) : TravelPlanResult()
 
     data class Error(val message: String) : TravelPlanResult()
