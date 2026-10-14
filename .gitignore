@@ -5,3 +5,4 @@ build
 .env
 .git
 gradle\wrapper\
+tes.py
