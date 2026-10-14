@@ -6,13 +6,11 @@
   <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" />
   <img src="https://img.shields.io/badge/HTMX-3366CC?style=for-the-badge&logo=htmx&logoColor=white" alt="HTMX" />
   <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" />
+  <a href="https://polman-bandung.ac.id/"><img src="https://img.shields.io/badge/Academic-Politeknik%20Manufaktur%20Bandung-005691?style=for-the-badge" alt="Politeknik Manufaktur Bandung" /></a>
   <img src="https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge" alt="License MIT" />
 </p>
 
-
 **TravelWise** adalah aplikasi web asisten perjalanan cerdas yang dirancang untuk mempermudah wisatawan merencanakan liburan secara komprehensif. Cukup dengan memasukkan nama negara atau kota tujuan serta memilih tingkatan anggaran (*tier budget*), TravelWise secara otomatis mengintegrasikan data profil negara, kondisi cuaca *real-time*, kurasi tempat wisata nyata dari peta OpenStreetMap, foto destinasi resolusi tinggi, serta kalkulasi estimasi pengeluaran harian multi-mata uang.
-
-Proyek ini dikembangkan sebagai bagian dari pemenuhan Tugas Praktik **Pemrograman Berorientasi Objek (Object-Oriented Programming / OOP)** Semester 3.
 
 ---
 
@@ -22,7 +20,7 @@ Proyek ini dikembangkan sebagai bagian dari pemenuhan Tugas Praktik **Pemrograma
 - **Jurusan**: Teknik Otomasi Manufaktur dan Mekatronika
 - **Program Studi**: Teknologi Rekayasa Informatika Industri
 - **Kelas**: 2 AEC-1
-- **Semester**: Ganjil 2026/2027
+- **Semester**: Ganjil 2026/2027 (Semester 3)
 - **Mata Kuliah**: Pemrograman Berorientasi Objek (PBO) Minggu 2
 - **Kelompok**: Kelompok 1
 

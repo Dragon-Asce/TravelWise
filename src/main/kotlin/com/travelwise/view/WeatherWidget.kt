@@ -16,7 +16,8 @@ fun FlowContent.weatherWidget(
     imageUrl: String,
     recommendedActivity: String,
     dailyBudget: String,
-    isOutdoor: Boolean = true
+    isOutdoor: Boolean = true,
+    targetCity: String = capital
 ) {
     div("space-y-6 animate-slide-up") {
 
@@ -30,7 +31,7 @@ fun FlowContent.weatherWidget(
                 div("lg:col-span-5 relative h-64 lg:h-auto border-b-2 lg:border-b-0 lg:border-r-2 border-slate-700 bg-black") {
                     img(src = imageUrl, alt = countryName, classes = "w-full h-full object-cover grayscale contrast-125 hover:grayscale-0 transition-all duration-500")
                     div("absolute top-2 left-2 bg-black px-2 py-1 border border-amber-400 text-amber-400 text-[10px] font-mono font-bold uppercase") {
-                        +"[ IMG_REF // $capital ]"
+                        +"[ IMG_REF // $targetCity ]"
                     }
                 }
 
@@ -42,7 +43,7 @@ fun FlowContent.weatherWidget(
                             span("px-2 py-0.5 bg-slate-800 text-slate-300 border border-slate-700 uppercase") { +"ISO_VAL: $currencyCode" }
                         }
                         h2("text-3xl md:text-5xl font-black font-heading text-white uppercase tracking-tight") {
-                            +"$capital, $countryName"
+                            +"$targetCity, $countryName"
                         }
                         p("text-slate-300 text-xs md:text-sm font-mono leading-relaxed bg-black/60 p-4 border border-slate-800") {
                             +"> $destinationDescription"
