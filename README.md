@@ -21,10 +21,10 @@ Proyek ini dikembangkan sebagai bagian dari pemenuhan Tugas Praktik **Pemrograma
 Proyek ini dikembangkan oleh kelompok 1 mahasiswa **D4 Teknik Rekayasa Perangkat Lunak / Teknik Manufaktur**, Jurusan Teknik Komputer dan Informatika, Politeknik Manufaktur Bandung (POLMAN Bandung):
 
 - **Farhan Maulana** ([@Dragon-Asce](https://github.com/Dragon-Asce))
-- **Arya Tirta** ([]())
-- **Abdul Majid** ([]())
-- **Muhammad Ihsan Juliansah** ([]())
-- **Kiyoshi Oloan Raphael Sitorus** ([]())
+- **Arya Tirta** ([@225443005-art](https://github.com/225443005-art))
+- **Abdul Majid** ([@Figliaaa](https://github.com/Figliaaa))
+- **Muhammad Ihsan Juliansah** ([@ijul212](https://github.com/ijul212))
+- **Kiyoshi Oloan Raphael Sitorus** ([@Yosh-22](https://github.com/Yosh-22))
 
 ---
 ## 🌟 Fitur Utama
