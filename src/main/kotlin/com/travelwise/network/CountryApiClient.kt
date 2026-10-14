@@ -5,104 +5,176 @@ import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import kotlinx.serialization.json.*
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 
-/**
- * REST Countries v3.1 + kamus alias/offline fallback.
- * Alur: alias -> nama kanonik -> API -> kamus -> anggap input sebagai kota.
- */
+@Serializable
+data class RestCountriesResponse(
+    @SerialName("data") val data: RestCountriesData? = null
+)
+
+@Serializable
+data class RestCountriesData(
+    @SerialName("objects") val objects: List<CountryDto> = emptyList()
+)
+
+@Serializable
+data class CountryDto(
+    @SerialName("names") val names: NamesDto? = null,
+    @SerialName("capitals") val capitals: List<CapitalDto> = emptyList(),
+    @SerialName("population") val population: Long? = 0,
+    @SerialName("currencies") val currencies: List<CurrencyDto> = emptyList(),
+    @SerialName("flag") val flag: FlagDto? = null,
+    @SerialName("codes") val codes: CodesDto? = null
+)
+
+@Serializable
+data class NamesDto(
+    @SerialName("common") val common: String = "",
+    @SerialName("official") val official: String = ""
+)
+
+@Serializable
+data class CapitalDto(
+    @SerialName("name") val name: String = ""
+)
+
+@Serializable
+data class CurrencyDto(
+    @SerialName("code") val code: String = "",
+    @SerialName("name") val name: String = "",
+    @SerialName("symbol") val symbol: String = ""
+)
+
+@Serializable
+data class FlagDto(
+    @SerialName("url_png") val urlPng: String? = null,
+    @SerialName("url_svg") val urlSvg: String? = null
+)
+
+@Serializable
+data class CodesDto(
+    @SerialName("alpha_2") val alpha2: String = "",
+    @SerialName("alpha_3") val alpha3: String = ""
+)
+
 class CountryApiClient(
-    private val baseUrl: String = "https://restcountries.com/v3.1",
+    private val apiKey: String = System.getenv("RESTCOUNTRIES_API_KEY")
+        ?: "rc_live_dab3068ca449486a8d6b4bb00af2acb2",
     private val client: HttpClient = HttpClients.default
 ) : ApiClient<Country> {
 
-    private fun c(name: String, capital: String, pop: Long, cur: String, curName: String, cca2: String) =
-        Country(
-            name = name, capital = capital, population = pop,
-            currencyCode = cur, currencyName = curName, officialName = name,
-            flagUrl = "https://flagcdn.com/w160/${cca2.lowercase()}.png"
+    private companion object {
+        const val BASE_URL = "https://api.restcountries.com/countries/v5"
+
+        val ALIASES = mapOf(
+            "jepang" to "Japan",
+            "inggris" to "United Kingdom",
+            "uk" to "United Kingdom",
+            "amerika" to "United States",
+            "amerika serikat" to "United States",
+            "usa" to "United States",
+            "jerman" to "Germany",
+            "prancis" to "France",
+            "perancis" to "France",
+            "belanda" to "Netherlands",
+            "tiongkok" to "China",
+            "cina" to "China",
+            "korea" to "South Korea",
+            "korea selatan" to "South Korea",
+            "rusia" to "Russia",
+            "australia" to "Australia",
+            "singapura" to "Singapore",
+            "malaysia" to "Malaysia",
+            "spanyol" to "Spain",
+            "italia" to "Italy",
+            "swis" to "Switzerland",
+            "swiss" to "Switzerland",
+            "arab saudi" to "Saudi Arabia"
         )
 
-    private val japan = c("Japan", "Tokyo", 125800000L, "JPY", "Japanese Yen", "JP")
-    private val indonesia = c("Indonesia", "Jakarta", 273800000L, "IDR", "Indonesian Rupiah", "ID")
-    private val france = c("France", "Paris", 67750000L, "EUR", "Euro", "FR")
-    private val usa = c("United States", "Washington, D.C.", 331900000L, "USD", "United States Dollar", "US")
-    private val uk = c("United Kingdom", "London", 67081000L, "GBP", "British Pound", "GB")
-    private val germany = c("Germany", "Berlin", 83200000L, "EUR", "Euro", "DE")
-    private val italy = c("Italy", "Rome", 59000000L, "EUR", "Euro", "IT")
-    private val singapore = c("Singapore", "Singapore", 5450000L, "SGD", "Singapore Dollar", "SG")
-    private val malaysia = c("Malaysia", "Kuala Lumpur", 32700000L, "MYR", "Malaysian Ringgit", "MY")
-    private val korea = c("South Korea", "Seoul", 51740000L, "KRW", "South Korean Won", "KR")
-    private val china = c("China", "Beijing", 1412000000L, "CNY", "Chinese Yuan", "CN")
-    private val australia = c("Australia", "Canberra", 25690000L, "AUD", "Australian Dollar", "AU")
-    private val thailand = c("Thailand", "Bangkok", 71600000L, "THB", "Thai Baht", "TH")
-    private val netherlands = c("Netherlands", "Amsterdam", 17530000L, "EUR", "Euro", "NL")
-
-    private val defaultCountries: Map<String, Country> = mapOf(
-        "japan" to japan, "jepang" to japan,
-        "indonesia" to indonesia,
-        "france" to france, "prancis" to france,
-        "united states" to usa, "usa" to usa, "amerika" to usa, "amerika serikat" to usa,
-        "united kingdom" to uk, "uk" to uk, "inggris" to uk,
-        "germany" to germany, "jerman" to germany,
-        "italy" to italy, "italia" to italy,
-        "singapore" to singapore, "singapura" to singapore,
-        "malaysia" to malaysia,
-        "south korea" to korea, "korea" to korea, "korea selatan" to korea,
-        "china" to china, "tiongkok" to china,
-        "australia" to australia,
-        "thailand" to thailand,
-        "netherlands" to netherlands, "belanda" to netherlands
-    )
-
-    override suspend fun fetchData(query: String): Country? = fetchCountry(query)
-
-    suspend fun fetchCountry(name: String): Country? {
-        val trimmed = name.trim()
-        if (trimmed.isEmpty()) return null
-
-        val seed = defaultCountries[trimmed.lowercase()]
-        val searchName = seed?.name ?: trimmed
-
-        fetchFromApi(searchName)?.let { return it }
-        if (seed != null) return seed
-
-        // Fallback umum: anggap input sebagai nama kota tujuan
-        val city = trimmed.replaceFirstChar { it.uppercase() }
-        return Country(
-            name = city, capital = city, population = 0L,
-            currencyCode = "USD", currencyName = "United States Dollar"
+        val FALLBACK_COUNTRIES = listOf(
+            Country("Indonesia", "Jakarta", 273800000L, "IDR", "Indonesian Rupiah"),
+            Country("Japan", "Tokyo", 125800000L, "JPY", "Japanese Yen"),
+            Country("United States", "Washington, D.C.", 331900000L, "USD", "United States Dollar"),
+            Country("United Kingdom", "London", 67081000L, "GBP", "British Pound"),
+            Country("France", "Paris", 67750000L, "EUR", "Euro"),
+            Country("Germany", "Berlin", 83200000L, "EUR", "Euro"),
+            Country("Switzerland", "Bern", 8700000L, "CHF", "Swiss Franc"),
+            Country("Singapore", "Singapore", 5450000L, "SGD", "Singapore Dollar"),
+            Country("Australia", "Canberra", 25690000L, "AUD", "Australian Dollar"),
+            Country("Italy", "Rome", 59000000L, "EUR", "Euro")
         )
     }
 
-    private suspend fun fetchFromApi(searchName: String): Country? = try {
-        val text = client.get(baseUrl) {
-            url { appendPathSegments("name", searchName) }
-            parameter("fields", "name,capital,population,currencies,flags,cca2")
-        }.bodyAsText()
+    private val jsonParser = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+    }
 
-        val array = Json.parseToJsonElement(text).jsonArray
-        val item = (array.firstOrNull {
-            it.jsonObject["name"]?.jsonObject?.get("common")?.jsonPrimitive?.contentOrNull
-                .equals(searchName, ignoreCase = true)
-        } ?: array.firstOrNull())?.jsonObject
+    override suspend fun fetchData(query: String): Country? = fetchCountry(query)
 
-        if (item == null) null else {
-            val nameObj = item["name"]?.jsonObject
-            val common = nameObj?.get("common")?.jsonPrimitive?.contentOrNull ?: searchName
-            val official = nameObj?.get("official")?.jsonPrimitive?.contentOrNull ?: common
-            val capital = item["capital"]?.jsonArray?.firstOrNull()?.jsonPrimitive?.contentOrNull ?: "N/A"
-            val population = item["population"]?.jsonPrimitive?.longOrNull ?: 0L
-            val currencies = item["currencies"]?.jsonObject
-            val code = currencies?.keys?.firstOrNull() ?: "USD"
-            val curName = currencies?.get(code)?.jsonObject?.get("name")?.jsonPrimitive?.contentOrNull ?: code
-            val flag = item["flags"]?.jsonObject?.get("png")?.jsonPrimitive?.contentOrNull
-                ?: item["cca2"]?.jsonPrimitive?.contentOrNull?.let { "https://flagcdn.com/w160/${it.lowercase()}.png" }
+    suspend fun fetchCountry(query: String): Country? {
+        val cleanQuery = query.trim()
+        if (cleanQuery.isBlank()) return null
 
-            Country(common, capital, population, code, curName, official, flag)
+        val mappedQuery = ALIASES[cleanQuery.lowercase()] ?: cleanQuery
+
+        // 1. Coba REST Countries v5 search endpoint (?q=...)
+        val searchResult = fetchFromUrl("$BASE_URL?q=${mappedQuery.encodeURLParameter()}")
+        if (searchResult != null) return searchResult
+
+        // 2. Offline fallback
+        return FALLBACK_COUNTRIES.firstOrNull {
+            it.name.equals(mappedQuery, ignoreCase = true) ||
+            it.capital.equals(mappedQuery, ignoreCase = true)
         }
-    } catch (e: Exception) {
-        println("[CountryApiClient] REST Countries gagal untuk '$searchName': ${e.message}")
-        null
+    }
+
+    suspend fun fetchByAlpha2(code: String): Country? {
+        val cleanCode = code.trim().uppercase()
+        if (cleanCode.length != 2) return null
+
+        return fetchFromUrl("$BASE_URL/codes.alpha_2/$cleanCode")
+    }
+
+    private suspend fun fetchFromUrl(url: String): Country? {
+        return try {
+            val response: HttpResponse = client.get(url) {
+                header("Authorization", "Bearer $apiKey")
+                header(HttpHeaders.Accept, "application/json")
+            }
+
+            if (response.status.value != 200) {
+                println("[CountryApiClient] REST Countries v5 status ${response.status.value} for $url")
+                return null
+            }
+
+            val bodyText = response.bodyAsText()
+            if (bodyText.isBlank()) return null
+
+            val parsedResponse: RestCountriesResponse = jsonParser.decodeFromString(bodyText)
+            val dto = parsedResponse.data?.objects?.firstOrNull() ?: return null
+
+            val name = dto.names?.common?.ifBlank { null } ?: dto.names?.official ?: "Unknown"
+            val capital = dto.capitals.firstOrNull()?.name ?: "N/A"
+            val currency = dto.currencies.firstOrNull()
+            val currencyCode = currency?.code?.ifBlank { null } ?: "USD"
+            val currencyName = currency?.name?.ifBlank { null } ?: "United States Dollar"
+
+            Country(
+                name = name,
+                capital = capital,
+                population = dto.population ?: 0L,
+                currencyCode = currencyCode,
+                currencyName = currencyName,
+                officialName = dto.names?.official ?: name,
+                flagUrl = dto.flag?.urlPng ?: dto.flag?.urlSvg
+            )
+        } catch (e: Exception) {
+            println("[CountryApiClient] REST Countries v5 error: ${e.localizedMessage}")
+            null
+        }
     }
 }

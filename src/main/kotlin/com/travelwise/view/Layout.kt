@@ -2,17 +2,22 @@ package com.travelwise.view
 
 import kotlinx.html.*
 
+<<<<<<< HEAD
 fun HTML.mainLayout(bodyContent: DIV.() -> Unit) {
+=======
+// PERBAIKAN 1: Mengubah nama parameter dari 'content' menjadi 'pageContent'
+fun HTML.mainLayout(pageContent: DIV.() -> Unit) {
+>>>>>>> fix/docker-and-ui-telemetry
     head {
         title { +"TRAVELWISE // TACTICAL TELEMETRY ENGINE" }
         meta { name = "viewport"; content = "width=device-width, initial-scale=1.0" }
-        
+
         script { src = "https://cdn.tailwindcss.com" }
         script { src = "https://unpkg.com/htmx.org@1.9.10" }
-        
+
         // Font Brutalist: Space Grotesk (Macro Header) & JetBrains Mono (Data Telemetry)
         link { href = "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Space+Grotesk:wght@700;900&display=swap"; rel = "stylesheet" }
-        
+
         style {
             unsafe {
                 raw("""
@@ -71,9 +76,9 @@ fun HTML.mainLayout(bodyContent: DIV.() -> Unit) {
         }
     }
     body("bg-[#0d0f12] text-slate-100 min-h-screen relative selection:bg-amber-400 selection:text-black border-t-4 border-amber-500") {
-        
-        // Scanlines Overlay Effect
-        div("fixed inset-0 crt-overlay z-40 pointer-events-none")
+
+        // PERBAIKAN 2: Menambahkan {} pada div overlay yang kosong
+        div("fixed inset-0 crt-overlay z-40 pointer-events-none") {}
 
         // Navbar Brutalis
         nav("border-b-2 border-slate-800 bg-[#12151a] sticky top-0 z-50") {
@@ -83,15 +88,15 @@ fun HTML.mainLayout(bodyContent: DIV.() -> Unit) {
                         +"TW"
                     }
                     div {
-                        span("text-xl font-black font-heading tracking-widest text-white uppercase block leading-none") { 
-                            +"TRAVELWISE //" 
+                        span("text-xl font-black font-heading tracking-widest text-white uppercase block leading-none") {
+                            +"TRAVELWISE //"
                         }
                         span("text-[10px] text-amber-400 font-mono tracking-tighter uppercase") {
                             +"[ TELEMETRY_SYS_V2.6 ]"
                         }
                     }
                 }
-                
+
                 div("flex items-center gap-4") {
                     div("hidden md:flex items-center gap-2 px-3 py-1 bg-slate-900 border border-slate-700 text-xs font-mono text-slate-300") {
                         span("text-amber-400 font-bold") { +"CTRL+K" }
@@ -99,15 +104,21 @@ fun HTML.mainLayout(bodyContent: DIV.() -> Unit) {
                         span { +"QUICK_INPUT" }
                     }
                     div("flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500 text-emerald-400 text-xs font-bold uppercase") {
-                        span("w-2 h-2 bg-emerald-400 animate-blink")
+                        // PERBAIKAN 2: Menambahkan {} pada span indikator yang kosong
+                        span("w-2 h-2 bg-emerald-400 animate-blink") {}
                         +"SYSTEM_ONLINE"
                     }
                 }
             }
         }
-        
+
         div("container mx-auto px-4 py-8 md:py-12 relative z-10") {
+<<<<<<< HEAD
             bodyContent()
+=======
+            // PERBAIKAN 1: Memanggil pageContent()
+            pageContent()
+>>>>>>> fix/docker-and-ui-telemetry
         }
 
         footer("mt-20 py-8 border-t-2 border-slate-800 bg-[#090a0c] text-slate-500 text-xs font-mono text-center") {

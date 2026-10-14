@@ -5,18 +5,18 @@ import kotlinx.html.*
 fun HTML.homeView() {
     mainLayout {
         div("max-w-5xl mx-auto space-y-10") {
-            
+
             // Hero Title Macro-Typography
             div("border-b-2 border-slate-800 pb-8 space-y-4") {
                 div("inline-block px-3 py-1 bg-amber-400 text-black font-black text-xs uppercase tracking-widest border border-black shadow-[3px_3px_0px_0px_#ffffff]") {
-                    +"// DESTINATION_INTELLIGENCE_MODULE"
+                    +">> DESTINATION_INTELLIGENCE_MODULE"
                 }
-                h1("text-4xl md:text-7xl font-black font-heading text-white uppercase tracking-tighter leading-none") { 
+                h1("text-4xl md:text-7xl font-black font-heading text-white uppercase tracking-tighter leading-none") {
                     +"ANALISIS WEATHER "
                     br()
                     span("text-amber-400 underline decoration-4 underline-offset-8") { +"& ESTIMASI BUDGET" }
                 }
-                p("text-slate-400 text-sm md:text-base font-mono max-w-2xl leading-relaxed") { 
+                p("text-slate-400 text-sm md:text-base font-mono max-w-2xl leading-relaxed") {
                     +"> Masukkan parameter kota/negara tujuan untuk menarik profil geografis, telemetri cuaca real-time, status musim, serta kalkulasi budget harian."
                 }
             }
@@ -89,8 +89,8 @@ fun HTML.homeView() {
             // Mechanical Terminal Buffer Loading Indicator
             div("htmx-indicator border-2 border-amber-400 bg-black p-6 my-8 text-center space-y-3 shadow-[6px_6px_0px_0px_#f59e0b]") {
                 id = "loading-spinner"
-                div("inline-block w-6 h-6 border-4 border-amber-400 border-t-transparent animate-spin")
-                p("text-amber-400 font-mono text-sm font-bold uppercase tracking-widest animate-blink") {
+                div("inline-block w-6 h-6 border-4 border-amber-400 border-t-transparent animate-spin") {}
+                p("text-amber-400 font-mono text-sm font-bold uppercase tracking-widest animate-pulse") {
                     +">> FETCHING_TELEMETRY_DATA_FROM_EXTERNAL_APIS..."
                 }
             }
