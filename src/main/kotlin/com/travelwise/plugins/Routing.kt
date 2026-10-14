@@ -33,7 +33,23 @@ suspend fun ApplicationCall.handleSearch(travelService: TravelService) {
 
     when (val result = travelService.getTravelPlan(countryQuery, tier)) {
         is TravelPlanResult.Success -> respondHtml {
-            body { weatherWidget(result) }
+            body {
+                weatherWidget(
+                    countryName = countryQuery, // Atau result.countryName jika ada di TravelPlanResult.Success
+                    capital = result.capital,
+                    population = result.population,
+                    currencyCode = result.currencyCode,
+                    temperature = result.temperature,
+                    humidity = result.humidity,
+                    weatherDesc = result.weatherDesc,
+                    seasonName = result.seasonName,
+                    seasonDesc = result.seasonDesc,
+                    destinationDescription = result.destinationDescription,
+                    imageUrl = result.imageUrl,
+                    recommendedActivity = result.recommendedActivity,
+                    dailyBudget = result.dailyBudget
+                )
+            }
         }
         is TravelPlanResult.Error -> respondHtml {
             body {

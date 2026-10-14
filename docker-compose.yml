@@ -10,3 +10,5 @@ services:
       - UNSPLASH_API_KEY=${UNSPLASH_API_KEY}
       - PORT=8080
     restart: unless-stopped
+    volumes:
+      - ./src/main/resources/static:/app/resources/static
