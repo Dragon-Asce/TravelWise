@@ -7,5 +7,6 @@ services:
     environment:
       - OPENWEATHER_API_KEY=${OPENWEATHER_API_KEY}
       - RESTCOUNTRIES_API_KEY=${RESTCOUNTRIES_API_KEY}
+      - UNSPLASH_API_KEY=${UNSPLASH_API_KEY}
       - PORT=8080
     restart: unless-stopped

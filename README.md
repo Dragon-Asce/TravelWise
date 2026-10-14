@@ -16,15 +16,26 @@ Proyek ini dikembangkan sebagai bagian dari pemenuhan Tugas Praktik **Pemrograma
 
 ---
 
-## 👥 Tim Pengembang
+##  Informasi Proyek & Anggota Tim
 
-Proyek ini dikembangkan oleh kelompok 1 mahasiswa **D4 Teknik Rekayasa Perangkat Lunak / Teknik Manufaktur**, Jurusan Teknik Komputer dan Informatika, Politeknik Manufaktur Bandung (POLMAN Bandung):
+- **Politeknik Manufaktur Bandung**
+- **Jurusan**: Teknik Otomasi Manufaktur dan Mekatronika
+- **Program Studi**: Teknologi Rekayasa Informatika Industri
+- **Kelas**: 2 AEC-1
+- **Semester**: Ganjil 2026/2027
+- **Mata Kuliah**: Pemrograman Berorientasi Objek (PBO) Minggu 2
+- **Kelompok**: Kelompok 1
 
-- **Farhan Maulana** ([@Dragon-Asce](https://github.com/Dragon-Asce))
-- **Arya Tirta** ([@225443005-art](https://github.com/225443005-art))
-- **Abdul Majid** ([@Figliaaa](https://github.com/Figliaaa))
-- **Muhammad Ihsan Juliansah** ([@ijul212](https://github.com/ijul212))
-- **Kiyoshi Oloan Raphael Sitorus** ([@Yosh-22](https://github.com/Yosh-22))
+###  Daftar Anggota Kelompok:
+
+| No | Nama Anggota | NIM | GitHub |
+|:---:|:---|:---:|:---:|
+| 1 | **Abdul Majid** | 225443001 | [@Figliaaa](https://github.com/Figliaaa) |
+| 2 | **Arya Tirta** | 225443005 | [@225443005-art](https://github.com/225443005-art) |
+| 3 | **Farhan Maulana** | 225443008 | [@Dragon-Asce](https://github.com/Dragon-Asce) |
+| 4 | **Kiyoshi Oloan Raphael Sitorus** | 225443012 | [@Yosh-22](https://github.com/Yosh-22) |
+| 5 | **Muhammad Ihsan Juliansah** | 225443017 | [@ijul212](https://github.com/ijul212) |
+
 
 ---
 ## 🌟 Fitur Utama
