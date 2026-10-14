@@ -2,14 +2,16 @@ package com.travelwise.network
 
 import com.travelwise.model.Country
 import io.ktor.client.*
-import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
+import io.ktor.http.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.jsonPrimitive
 
 @Serializable
 data class CountryDto(
@@ -31,7 +33,7 @@ data class CurrencyDto(
 )
 
 class CountryApiClient(
-    // Tetap menyimpan API Key yang Anda berikan
+    @Suppress("unused")
     private val apiKey: String = System.getenv("RESTCOUNTRIES_API_KEY")
         ?: "rc_live_dab3068ca449486a8d6b4bb00af2acb2",
     private val client: HttpClient = HttpClients.default
@@ -42,38 +44,56 @@ class CountryApiClient(
     }
 
     suspend fun fetchCountry(query: String): Country? {
-        if (query.isBlank()) return null
+        val cleanQuery = query.trim()
+        if (cleanQuery.isBlank()) return null
 
+        // 1. Coba Endpoint Nama Utama (/v3.1/name/)
+        // 2. Jika tidak ditemukan (404), coba Endpoint Terjemahan (/v3.1/translation/)
+        return fetchFromUrl("https://restcountries.com/v3.1/name/$cleanQuery")
+            ?: fetchFromUrl("https://restcountries.com/v3.1/translation/$cleanQuery")
+    }
+
+    private suspend fun fetchFromUrl(url: String): Country? {
         return try {
-            val response: HttpResponse = client.get("https://restcountries.com/v3.1/name/$query")
-
-            if (response.status.value != 200) {
-                println("[CountryApiClient] REST Countries gagal untuk '$query': HTTP Status ${response.status.value}")
-                return null
+            val response: HttpResponse = client.get(url) {
+                header(HttpHeaders.UserAgent, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                header(HttpHeaders.Accept, "application/json")
             }
 
             val bodyText = response.bodyAsText()
+            if (bodyText.isBlank()) return null
 
-            // Cek apakah respon berupa JsonArray '[' murni
             val jsonElement = jsonParser.parseToJsonElement(bodyText)
-            if (jsonElement !is JsonArray) {
-                println("[CountryApiClient] REST Countries memberikan JsonObject (Error/Unauthorized) untuk '$query'")
-                return null
-            }
 
-            val countries: List<CountryDto> = jsonParser.decodeFromJsonElement(jsonElement)
-            val dto = countries.firstOrNull() ?: return null
+            val dto: CountryDto = when (jsonElement) {
+                is JsonArray -> {
+                    if (jsonElement.isEmpty()) return null
+                    jsonParser.decodeFromJsonElement(jsonElement.first())
+                }
+                is JsonObject -> {
+                    // Cek jika JsonObject berisi respon error dari server (seperti {"status": 404, "message": "Not Found"})
+                    if (jsonElement.containsKey("status") || jsonElement.containsKey("message")) {
+                        val msg = jsonElement["message"]?.jsonPrimitive?.content ?: "Error Response"
+                        val status = jsonElement["status"]?.jsonPrimitive?.content ?: response.status.value.toString()
+                        println("[CountryApiClient] REST Countries Info [$status]: $msg")
+                        return null
+                    }
+                    // Cek jika JsonObject adalah data negara tunggal
+                    jsonParser.decodeFromJsonElement(jsonElement)
+                }
+                else -> return null
+            }
 
             val currencyCode = dto.currencies?.keys?.firstOrNull() ?: "USD"
 
             Country(
-                name = dto.nameInfo?.common ?: query,
+                name = dto.nameInfo?.common ?: "Unknown",
                 capital = dto.capitalList?.firstOrNull() ?: "N/A",
                 population = dto.population ?: 0,
                 currencyCode = currencyCode
             )
         } catch (e: Exception) {
-            println("[CountryApiClient] REST Countries gagal untuk '$query': ${e.localizedMessage}")
+            println("[CountryApiClient] REST Countries Error: ${e.localizedMessage}")
             null
         }
     }
