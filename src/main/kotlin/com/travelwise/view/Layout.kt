@@ -2,52 +2,99 @@ package com.travelwise.view
 
 import kotlinx.html.*
 
+// PERBAIKAN 1: Mengubah nama parameter dari 'content' menjadi 'pageContent'
 fun HTML.mainLayout(pageContent: DIV.() -> Unit) {
     head {
-        title { +"TRAVELWISE // TACTICAL TELEMETRY ENGINE" }
-        meta { name = "viewport"; content = "width=device-width, initial-scale=1.0" }
+        title { +"TRAVELWISE // SWISS TOURISM INDEX" }
+        meta(name = "viewport", content = "width=device-width, initial-scale=1.0")
 
+        // Tailwind & HTMX
         script { src = "https://cdn.tailwindcss.com" }
         script { src = "https://unpkg.com/htmx.org@1.9.10" }
 
-        // Font Brutalist: Space Grotesk (Macro Header) & JetBrains Mono (Data Telemetry)
-        link { href = "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Space+Grotesk:wght@700;900&display=swap"; rel = "stylesheet" }
+        // Font Swiss Brutalism: Inter
+        link { href = "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap"; rel = "stylesheet" }
+
+        // Leaflet CSS & JS untuk Peta
+        link { href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"; rel = "stylesheet" }
+        script { src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" }
 
         style {
             unsafe {
                 raw("""
-                    body { font-family: 'JetBrains Mono', monospace; }
-                    h1, h2, h3, .font-heading { font-family: 'Space Grotesk', sans-serif; }
+                    /* SWISS TYPOGRAPHY & BRUTALIST RULES */
+                    * {
+                        border-radius: 0px !important;
+                        font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+                        letter-spacing: -0.02em;
+                    }
+                    
+                    body {
+                        background-color: #F4F4F0;
+                        color: #050505;
+                        -webkit-font-smoothing: antialiased;
+                    }
 
-                    /* CRT Scanline Effect Overlay */
-                    .crt-overlay {
-                        background: repeating-linear-gradient(
-                            0deg,
-                            rgba(0, 0, 0, 0.15),
-                            rgba(0, 0, 0, 0.15) 1px,
-                            transparent 1px,
-                            transparent 2px
-                        );
-                        pointer-events: none;
+                    /* Macro-Typography */
+                    .text-macro {
+                        font-size: clamp(3rem, 8vw, 8rem);
+                        line-height: 0.85;
+                        letter-spacing: -0.05em;
+                        font-weight: 900;
+                        text-transform: uppercase;
+                    }
+
+                    /* Structural Borders */
+                    .swiss-border { border: 2px solid #050505; }
+                    .swiss-border-b { border-bottom: 2px solid #050505; }
+                    .swiss-border-t { border-top: 2px solid #050505; }
+                    .swiss-border-l { border-left: 2px solid #050505; }
+                    .swiss-border-r { border-right: 2px solid #050505; }
+
+                    /* Custom Radio Buttons for Budget Tier */
+                    input[type="radio"]:checked + label {
+                        background-color: #050505;
+                        color: #ffffff;
+                    }
+
+                    /* Photography */
+                    .img-swiss {
+                        filter: contrast(110%) saturate(120%);
+                        transition: transform 0.4s ease;
+                    }
+                    
+                    .img-wrap:hover .img-swiss {
+                        transform: scale(1.02);
+                    }
+
+                    /* Animations */
+                    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+                    .animate-blink { animation: blink 1s step-end infinite; }
+                    
+                    @keyframes slideUp {
+                        from { opacity: 0; transform: translateY(15px); }
+                        to { opacity: 1; transform: translateY(0); }
+                    }
+                    .animate-enter { animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+                    
+                    @keyframes ticker {
+                        0% { transform: translateX(100%); }
+                        100% { transform: translateX(-100%); }
+                    }
+                    .animate-ticker {
+                        display: inline-block;
+                        white-space: nowrap;
+                        animation: ticker 20s linear infinite;
                     }
 
                     /* HTMX Indicator State */
                     .htmx-indicator { display: none; opacity: 0; }
                     .htmx-request .htmx-indicator, .htmx-request.htmx-indicator { display: block; opacity: 1; }
                     
-                    /* Brutalist Animations */
-                    @keyframes rainDropBrutalist {
-                        0% { transform: translateY(-10px); opacity: 0; }
-                        50% { opacity: 1; }
-                        100% { transform: translateY(60px); opacity: 0; }
+                    /* Clean Brutalist Map Styling (Fix Blackscreen) */
+                    .leaflet-tile {
+                        filter: grayscale(100%) contrast(120%);
                     }
-                    .animate-rain-brutal { animation: rainDropBrutalist 0.5s linear infinite; }
-
-                    @keyframes pulseBlink {
-                        0%, 100% { opacity: 1; }
-                        50% { opacity: 0.2; }
-                    }
-                    .animate-blink { animation: pulseBlink 1s infinite steps(1); }
                 """)
             }
         }
@@ -70,7 +117,7 @@ fun HTML.mainLayout(pageContent: DIV.() -> Unit) {
             }
         }
     }
-    body("bg-[#0d0f12] text-slate-100 min-h-screen relative selection:bg-amber-400 selection:text-black border-t-4 border-amber-500") {
+    body(classes = "min-h-screen flex flex-col p-4 md:p-8 selection:bg-[#E61919] selection:text-white relative") {
 
         // PERBAIKAN 2: Menambahkan {} pada div overlay yang kosong
         div("fixed inset-0 crt-overlay z-40 pointer-events-none") {}
@@ -108,6 +155,7 @@ fun HTML.mainLayout(pageContent: DIV.() -> Unit) {
         }
 
         div("container mx-auto px-4 py-8 md:py-12 relative z-10") {
+            // PERBAIKAN 1: Memanggil pageContent()
             pageContent()
         }
 
