@@ -384,7 +384,7 @@ Standar penulisan commit mengacu pada **Conventional Commits**:
 - `refactor`: Refaktor struktur kode tanpa merubah fungsi (contoh: `refactor(service): optimize budget calculation`)
 - `docs`: Pembaruan dokumentasi (contoh: `docs(kdoc): add comprehensive KDoc for models, services, views`)
 
-Silakan merujuk ke file [CONTRIBUTING.md](file:///c:/Tugas%20Kuliah/Semester%203/Praktek%20OOP/TravelWise/CONTRIBUTING.md) untuk detail panduan kontribusi selengkapnya.
+Silakan merujuk ke file [CONTRIBUTING.md](CONTRIBUTING.md) untuk detail panduan kontribusi selengkapnya.
 
 ---
 
