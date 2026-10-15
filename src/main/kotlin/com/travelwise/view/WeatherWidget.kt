@@ -1,195 +1,265 @@
 package com.travelwise.view
 
 import kotlinx.html.*
+import java.text.NumberFormat
+import java.util.Locale
+
+// Data Class dummy untuk POI OSM
+data class PointOfInterest(
+    val name: String,
+    val category: String,
+    val osmLink: String,
+    val lat: Double = 0.0,
+    val lon: Double = 0.0
+)
 
 fun FlowContent.weatherWidget(
     countryName: String,
     capital: String,
-    population: String,
-    currencyCode: String,
-    temperature: Double,
-    humidity: Int,
-    weatherDesc: String,
-    seasonName: String,
-    seasonDesc: String,
     destinationDescription: String,
     imageUrl: String,
-    recommendedActivity: String,
-    dailyBudget: String,
-    isOutdoor: Boolean = true,
-    targetCity: String = capital
+    
+    // Weather
+    temperature: Double,
+    humidity: Int,
+    windSpeed: Double,
+    weatherDesc: String,
+    isOutdoor: Boolean,
+    
+    // Currency
+    currencyCode: String,
+    tierSelected: String, // backpacker, moderate, luxury
+    
+    // Simulated Costs
+    localCostAcc: Double,
+    localCostFood: Double,
+    localCostTrans: Double,
+    idrCostAcc: Double,
+    idrCostFood: Double,
+    idrCostTrans: Double,
+    
+    // Map & POI
+    mapLat: Double = 35.6762,
+    mapLon: Double = 139.6503,
+    poiList: List<PointOfInterest>
 ) {
-    div("space-y-6 animate-slide-up") {
+    
+    val totalLocal = localCostAcc + localCostFood + localCostTrans
+    val totalIdr = idrCostAcc + idrCostFood + idrCostTrans
+    
+    // Locale & Formatter
+    val idrFormatter = NumberFormat.getNumberInstance(Locale("id", "ID"))
+    val sym = if (currencyCode == "JPY") "¥" else if (currencyCode == "USD") "$" else if (currencyCode == "EUR") "€" else "Rp"
 
-        // ==========================================
-        // 1. HERO DESTINATION FRAME (Monochrome/High-Contrast Blueprint)
-        // ==========================================
-        div("bg-[#12151a] border-2 border-slate-700 shadow-[8px_8px_0px_0px_#ffffff] relative overflow-hidden") {
+    section("pb-12 animate-enter") {
+        id = "result-view"
+        
+        // --- HEADER BAR KECIL ---
+        div("mb-4 pb-2 swiss-border-b flex justify-between items-end") {
+            span("text-xs font-bold uppercase text-[#E61919]") { +"SYS. MSG: DATA SUCCESSFULLY COMPILED" }
+            button(type = ButtonType.button) {
+                id = "btn-reset-view"
+                classes = setOf("text-xs", "font-bold", "uppercase", "text-gray-500", "hover:text-[#050505]", "transition-colors", "cursor-pointer")
+                attributes["onclick"] = "document.getElementById('result-view').remove(); document.getElementById('search-view').classList.remove('hidden');"
+                +"[ NEW QUERY ]"
+            }
+        }
+
+        // --- TITLE & FOTO BESAR ---
+        div("grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 mb-8") {
+            div("lg:col-span-7 flex flex-col justify-end") {
+                h2("text-macro text-[#050505] break-words") {
+                    +capital
+                    br()
+                    span("text-[#E61919]") { +countryName }
+                }
+                p("text-base font-medium mt-4 max-w-xl") {
+                    +destinationDescription
+                }
+            }
             
-            div("grid grid-cols-1 lg:grid-cols-12") {
-                // Foto Banner dengan Frame Blueprint Industri
-                div("lg:col-span-5 relative h-64 lg:h-auto border-b-2 lg:border-b-0 lg:border-r-2 border-slate-700 bg-black") {
-                    img(src = imageUrl, alt = countryName, classes = "w-full h-full object-cover grayscale contrast-125 hover:grayscale-0 transition-all duration-500")
-                    div("absolute top-2 left-2 bg-black px-2 py-1 border border-amber-400 text-amber-400 text-[10px] font-mono font-bold uppercase") {
-                        +"[ IMG_REF // $targetCity ]"
+            div("lg:col-span-5 img-wrap bg-white p-2 swiss-border shadow-[8px_8px_0px_0px_#050505]") {
+                img(src = imageUrl, alt = capital) {
+                    classes = setOf("w-full", "h-64", "object-cover", "img-swiss")
+                }
+                div("text-[10px] font-bold uppercase mt-2 text-right text-gray-500") { +"IMG.SRC: UNSPLASH API" }
+            }
+        }
+
+        // --- GRID KONTEN TENGAH ---
+        div("grid grid-cols-1 md:grid-cols-12 gap-8 swiss-border-t pt-8") {
+            
+            // KIRI: Cuaca & Map
+            div("md:col-span-5 space-y-6 flex flex-col") {
+                
+                // Weather Data
+                div("bg-[#050505] text-white p-4") {
+                    span("text-[10px] font-bold uppercase tracking-widest text-gray-400 block mb-2") { +"REAL-TIME WEATHER (OPENWEATHER)" }
+                    div("flex items-end gap-2") {
+                        span("text-6xl font-black tracking-tighter") { +"${temperature.toInt()}°" }
+                        span("text-2xl font-bold mb-1") { +"C" }
+                    }
+                    span("text-sm font-bold uppercase mt-1 block text-[#E61919]") { +weatherDesc }
+                    div("flex gap-4 text-xs font-bold uppercase mt-4 text-gray-400") {
+                        span { +"HUMIDITY: $humidity%" }
+                        span { +"WIND: ${windSpeed.toInt()} KM/H" }
                     }
                 }
 
-                // Metadata Teknis & Deskripsi
-                div("lg:col-span-7 p-6 md:p-8 space-y-5 flex flex-col justify-between") {
-                    div("space-y-3") {
-                        div("flex items-center gap-2 flex-wrap text-xs font-mono") {
-                            span("px-2 py-0.5 bg-amber-400 text-black font-black uppercase") { +"LOCATION_FOUND" }
-                            span("px-2 py-0.5 bg-slate-800 text-slate-300 border border-slate-700 uppercase") { +"ISO_VAL: $currencyCode" }
+                // Adaptive Directive
+                val directiveShadow = if (!isOutdoor) "shadow-[4px_4px_0px_0px_#E61919]" else "shadow-[4px_4px_0px_0px_#050505]"
+                val directiveText = if (!isOutdoor) "UMBRELLA REQUIRED. INDOOR ROUTING ACTIVATED." else "OPTIMAL CONDITIONS. OUTDOOR EXPLORATION ADVISED."
+                
+                div("swiss-border p-4 bg-white $directiveShadow") {
+                    span("text-[10px] font-bold uppercase tracking-widest text-[#E61919] block mb-1") { +"ADAPTIVE SYSTEM DIRECTIVE" }
+                    p("text-lg font-black uppercase leading-tight") {
+                        +directiveText
+                    }
+                }
+
+                // Monocrome Map (Leaflet)
+                div("swiss-border p-2 bg-white flex-grow mt-2 relative min-h-[250px]") {
+                    div("text-[10px] font-bold uppercase tracking-widest text-gray-500 block mb-2 px-2") { +"RADAR TELEMETRY (OPENSTREETMAP)" }
+                    div("w-full h-[220px] bg-gray-200") {
+                        id = "leaflet-map"
+                    }
+                }
+            }
+
+            // KANAN: Tabel Anggaran & POI List
+            div("md:col-span-7 space-y-8") {
+                
+                // 1. Table Anggaran
+                div {
+                    div("flex justify-between items-end mb-2") {
+                        span("text-sm font-bold uppercase text-gray-500") { +"FINANCIAL LOGISTICS (DAILY EST)" }
+                        span("bg-[#E61919] text-white px-2 py-1 text-[10px] font-black uppercase") { +"TIER: $tierSelected" }
+                    }
+                    
+                    table("w-full text-left font-medium text-sm swiss-border bg-white") {
+                        thead("bg-[#050505] text-white text-xs font-bold uppercase") {
+                            tr {
+                                th("p-3 swiss-border-r") { +"KATEGORI" }
+                                th("p-3 swiss-border-r") { +"LOKAL ($currencyCode)" }
+                                th("p-3") { +"KONVERSI (IDR)" }
+                            }
                         }
-                        h2("text-3xl md:text-5xl font-black font-heading text-white uppercase tracking-tight") {
-                            +"$targetCity, $countryName"
-                        }
-                        p("text-slate-300 text-xs md:text-sm font-mono leading-relaxed bg-black/60 p-4 border border-slate-800") {
-                            +"> $destinationDescription"
+                        tbody {
+                            tr("swiss-border-t") {
+                                td("p-3 swiss-border-r font-bold") { +"AKOMODASI" }
+                                td("p-3 swiss-border-r") { +"$sym ${idrFormatter.format(localCostAcc)}" }
+                                td("p-3 text-gray-500") { +"Rp ${idrFormatter.format(idrCostAcc)}" }
+                            }
+                            tr("swiss-border-t") {
+                                td("p-3 swiss-border-r font-bold") { +"KONSUMSI" }
+                                td("p-3 swiss-border-r") { +"$sym ${idrFormatter.format(localCostFood)}" }
+                                td("p-3 text-gray-500") { +"Rp ${idrFormatter.format(idrCostFood)}" }
+                            }
+                            tr("swiss-border-t") {
+                                td("p-3 swiss-border-r font-bold") { +"TRANSPORTASI" }
+                                td("p-3 swiss-border-r") { +"$sym ${idrFormatter.format(localCostTrans)}" }
+                                td("p-3 text-gray-500") { +"Rp ${idrFormatter.format(idrCostTrans)}" }
+                            }
+                            tr("swiss-border-t bg-gray-100") {
+                                td("p-3 swiss-border-r font-black") { +"TOTAL ESTIMASI" }
+                                td("p-3 swiss-border-r font-black text-[#E61919]") { +"$sym ${idrFormatter.format(totalLocal)}" }
+                                td("p-3 font-black text-[#E61919]") { +"Rp ${idrFormatter.format(totalIdr)}" }
+                            }
                         }
                     }
+                }
 
-                    // Grid Data Telemetri Negara
-                    div("grid grid-cols-2 gap-3 pt-4 border-t border-slate-800 text-xs font-mono") {
-                        div("bg-black p-3 border border-slate-800") {
-                            p("text-slate-500 font-bold uppercase") { +"[ CAPITAL_CITY ]" }
-                            p("text-white font-black text-sm") { +capital }
-                        }
-                        div("bg-black p-3 border border-slate-800") {
-                            p("text-slate-500 font-bold uppercase") { +"[ POPULATION ]" }
-                            p("text-sky-400 font-black text-sm") { +"$population RECT" }
+                // 2. POI Cards (Osm)
+                div {
+                    div("flex justify-between items-end swiss-border-b pb-2 mb-4") {
+                        span("text-sm font-bold uppercase") { +"ADAPTIVE POI INDEX (OSM OVERPASS)" }
+                        span("text-[10px] font-bold text-[#E61919] uppercase") { if(isOutdoor) +"RECOMMENDED OUTDOOR" else +"RECOMMENDED INDOOR" }
+                    }
+                    
+                    div("grid grid-cols-1 sm:grid-cols-2 gap-4") {
+                        poiList.forEach { poi ->
+                            a(href = poi.osmLink) {
+                                classes = setOf("block", "bg-white", "p-4", "swiss-border", "hover:bg-[#050505]", "hover:text-white", "transition-colors", "group", "cursor-pointer")
+                                target = "_blank"
+                                span("text-[10px] font-bold uppercase text-gray-500 group-hover:text-gray-400 mb-2 block") { +"[ ${poi.category} ]" }
+                                span("text-sm font-black uppercase leading-tight block mb-4") { +poi.name }
+                                div("border-t-2 border-[#050505] group-hover:border-gray-600 pt-2 flex justify-between items-center text-xs font-bold uppercase") {
+                                    span { +"OSM MAP" }
+                                    span("transform group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform") { +"↗" }
+                                }
+                            }
                         }
                     }
                 }
             }
         }
-
-        // ==========================================
-        // 2. BENTO TELEMETRY: WEATHER & SEASON MODULES
-        // ==========================================
-        div("grid grid-cols-1 md:grid-cols-3 gap-6") {
-
-            // ------------------------------------------
-            // MODULE 1: WEATHER TELEMETRY
-            // ------------------------------------------
-            val isRainy = weatherDesc.contains("rain", ignoreCase = true) || weatherDesc.contains("hujan", ignoreCase = true)
-            val isSnowy = weatherDesc.contains("snow", ignoreCase = true) || weatherDesc.contains("salju", ignoreCase = true)
-
-            div("bg-[#12151a] border-2 border-sky-400 p-6 shadow-[6px_6px_0px_0px_#38bdf8] relative flex flex-col justify-between") {
-                div("absolute top-2 right-2 px-2 py-0.5 bg-sky-400 text-black font-black text-[10px] uppercase") {
-                    +"SYS_MOD // 01"
-                }
-
-                div("space-y-4") {
-                    h3("text-lg font-black font-heading text-white uppercase tracking-wider flex items-center gap-2") {
-                        span("text-sky-400") { +"[⚡]" }
-                        +"REALTIME_WEATHER"
-                    }
-
-                    div("bg-black p-4 border border-sky-500/40 text-center relative overflow-hidden") {
-                        if (isRainy) {
-                            div("absolute inset-0 opacity-30 flex justify-around pointer-events-none") {
-                                repeat(6) { div("w-0.5 bg-sky-400 animate-rain-brutal") }
-                            }
-                        }
-                        div("text-5xl font-black font-heading text-sky-400 tracking-tighter") {
-                            +"$temperature°C"
-                        }
-                        p("text-slate-400 text-xs font-mono font-bold uppercase mt-1") {
-                            +"STATUS: $weatherDesc"
-                        }
-                    }
-
-                    div("space-y-1 text-xs font-mono") {
-                        div("flex justify-between text-slate-400") {
-                            span { +"HUMIDITY_LEVEL:" }
-                            span("text-sky-400 font-bold") { +"$humidity%" }
-                        }
-                        div("w-full bg-black h-3 border border-slate-700 p-0.5") {
-                            div("bg-sky-400 h-full") {
-                                style = "width: $humidity%"
-                            }
-                        }
-                    }
-                }
-            }
-
-            // ------------------------------------------
-            // MODULE 2: SEASONAL INTELLIGENCE
-            // ------------------------------------------
-            div("bg-[#12151a] border-2 border-amber-400 p-6 shadow-[6px_6px_0px_0px_#f59e0b] relative flex flex-col justify-between") {
-                div("absolute top-2 right-2 px-2 py-0.5 bg-amber-400 text-black font-black text-[10px] uppercase") {
-                    +"SYS_MOD // 02"
-                }
-
-                div("space-y-4") {
-                    h3("text-lg font-black font-heading text-white uppercase tracking-wider flex items-center gap-2") {
-                        span("text-amber-400") { +"[🌐]" }
-                        +"SEASON_TELEMETRY"
-                    }
-
-                    div("bg-black p-4 border border-amber-500/40 space-y-2") {
-                        div("inline-block px-2 py-0.5 bg-amber-400 text-black font-black text-xs uppercase") {
-                            +seasonName
-                        }
-                        p("text-slate-300 text-xs font-mono leading-relaxed") {
-                            +"> $seasonDesc"
-                        }
-                    }
-                }
-
-                p("text-[10px] text-slate-500 font-mono uppercase border-t border-slate-800 pt-3") {
-                    +"[ GEAR_RECOMMENDATION: ADAPTIVE_TO_CURRENT_SEASON ]"
-                }
-            }
-
-            // ------------------------------------------
-            // MODULE 3: ACTION & BUDGET CALCULATOR
-            // ------------------------------------------
-            div("bg-[#12151a] border-2 border-emerald-400 p-6 shadow-[6px_6px_0px_0px_#10b981] relative flex flex-col justify-between md:col-span-3 lg:col-span-1") {
-                div("absolute top-2 right-2 px-2 py-0.5 bg-emerald-400 text-black font-black text-[10px] uppercase") {
-                    +"SYS_MOD // 03"
-                }
-
-                div("space-y-4") {
-                    h3("text-lg font-black font-heading text-white uppercase tracking-wider flex items-center gap-2") {
-                        span("text-emerald-400") { +"[🎯]" }
-                        +"ACTION_&_BUDGET"
-                    }
-
-                    div("bg-black p-3 border border-emerald-500/40 space-y-2") {
-                        span("inline-block px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-[10px] font-bold border border-emerald-500/40 uppercase") {
-                            if (isOutdoor) +"[ MODE: OUTDOOR_ACTION ]" else +"[ MODE: INDOOR_ACTION ]"
-                        }
-                        p("text-emerald-200 text-xs font-mono leading-relaxed") {
-                            +"> $recommendedActivity"
-                        }
-                    }
-
-                    div("bg-black p-3 border border-slate-700 flex justify-between items-center") {
-                        div {
-                            p("text-[10px] text-slate-500 font-bold uppercase") { +"[ EST_DAILY_BUDGET ]" }
-                            p("text-lg font-black text-emerald-400 font-heading") { +dailyBudget }
-                        }
-                        span("text-xl text-emerald-400 font-mono") { +"[VAL]" }
-                    }
-                }
+        
+        // Script untuk inisialisasi Map Monokrom
+        script {
+            unsafe {
+                raw("""
+                    // Jalankan Inisialisasi Map Setelah View Dimuat
+                    setTimeout(function() {
+                        var map = L.map('leaflet-map', {
+                            zoomControl: false,
+                            attributionControl: false
+                        }).setView([$mapLat, $mapLon], 13);
+                        
+                        // CartoDB Positron atau Stamen Toner (Monokrom style)
+                        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                            maxZoom: 19
+                        }).addTo(map);
+                        
+                        // Custom Marker Merah Swiss Brutal
+                        var brutalIcon = L.divIcon({
+                            className: 'custom-div-icon',
+                            html: "<div style='background-color:#E61919; width:12px; height:12px; border:2px solid #050505;'></div>",
+                            iconSize: [12, 12],
+                            iconAnchor: [6, 6]
+                        });
+                        
+                        // Add marker center
+                        L.marker([$mapLat, $mapLon], {icon: brutalIcon}).addTo(map);
+                    }, 100);
+                """)
             }
         }
     }
 }
 
-// Error Component Telemetri Industri
+// ------------------------------------------------------------------------
+// Error Widget State (Brutalist 404)
+// ------------------------------------------------------------------------
 fun FlowContent.weatherErrorWidget(errorMessage: String) {
-    div("p-6 bg-black border-2 border-red-500 shadow-[6px_6px_0px_0px_#ef4444] text-center max-w-lg mx-auto my-6 space-y-3 font-mono") {
-        div("inline-block px-3 py-1 bg-red-500 text-black font-black text-xs uppercase") {
-            +"[ ERROR_404 // TARGET_NOT_FOUND ]"
+    section("bg-[#E61919] text-[#050505] p-8 md:p-16 text-center animate-enter relative overflow-hidden min-h-[60vh] flex flex-col justify-center") {
+        id = "result-view"
+        
+        // Tanda silang (crosshairs) di background
+        div("absolute inset-0 pointer-events-none opacity-20") {
+            div("absolute top-8 left-8 w-8 h-px bg-[#050505]") {}
+            div("absolute top-4 left-12 w-px h-8 bg-[#050505]") {}
+            
+            div("absolute bottom-8 right-8 w-8 h-px bg-[#050505]") {}
+            div("absolute bottom-4 right-12 w-px h-8 bg-[#050505]") {}
         }
-        h4("text-lg font-black font-heading text-white uppercase") { +"FAILED TO RESOLVE DESTINATION" }
-        p("text-slate-400 text-xs leading-relaxed") { +"> $errorMessage" }
-        div("text-[10px] text-red-400 border border-red-500/40 p-2 bg-red-950/20 uppercase") {
-            +"PLEASE CHECK SPELLING (E.G. TOKYO, BALI, ZURICH, PARIS)"
+        
+        h2("text-[clamp(4rem,15vw,12rem)] font-black uppercase tracking-tighter leading-none mix-blend-multiply opacity-50") {
+            +"404"
+        }
+        h3("text-4xl md:text-6xl font-black uppercase tracking-tighter mt-[-2rem] relative z-10") {
+            +"TARGET UNKNOWN"
+        }
+        
+        p("text-base md:text-xl font-bold uppercase mt-8 max-w-xl mx-auto bg-[#050505] text-white p-4") {
+            +errorMessage
+        }
+        
+        div("mt-12") {
+            button(type = ButtonType.button) {
+                classes = setOf("bg-transparent", "hover:bg-[#050505]", "text-[#050505]", "hover:text-white", "font-black", "uppercase", "text-xl", "px-12", "py-4", "border-4", "border-[#050505]", "transition-colors", "cursor-pointer")
+                attributes["onclick"] = "document.getElementById('result-view').remove(); document.getElementById('search-view').classList.remove('hidden');"
+                +"RE-CALIBRATE ↺"
+            }
         }
     }
 }

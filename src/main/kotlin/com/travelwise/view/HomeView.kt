@@ -4,101 +4,127 @@ import kotlinx.html.*
 
 fun HTML.homeView() {
     mainLayout {
-        div("max-w-5xl mx-auto space-y-10") {
-
-            // Hero Title Macro-Typography
-            div("border-b-2 border-slate-800 pb-8 space-y-4") {
-                div("inline-block px-3 py-1 bg-amber-400 text-black font-black text-xs uppercase tracking-widest border border-black shadow-[3px_3px_0px_0px_#ffffff]") {
-                    +">> DESTINATION_INTELLIGENCE_MODULE"
-                }
-                h1("text-4xl md:text-7xl font-black font-heading text-white uppercase tracking-tighter leading-none") {
-                    +"ANALISIS WEATHER "
+        
+        // =========================================================
+        // VIEW 1: SEARCH & BUDGET FORM
+        // =========================================================
+        section("space-y-8 animate-enter") {
+            id = "search-view"
+            
+            div {
+                h2("text-macro mb-2") {
+                    +"TARGET"
                     br()
-                    span("text-amber-400 underline decoration-4 underline-offset-8") { +"& ESTIMASI BUDGET" }
-                }
-                p("text-slate-400 text-sm md:text-base font-mono max-w-2xl leading-relaxed") {
-                    +"> Masukkan parameter kota/negara tujuan untuk menarik profil geografis, telemetri cuaca real-time, status musim, serta kalkulasi budget harian."
+                    +"ANALYSIS."
                 }
             }
 
-            // Industrial Search Box
-            div("bg-[#141820] border-2 border-slate-700 p-4 md:p-6 shadow-[8px_8px_0px_0px_#38bdf8] relative") {
-                div("absolute -top-3 left-4 px-2 bg-[#0d0f12] text-sky-400 text-xs font-bold border border-sky-400 uppercase tracking-widest") {
-                    +"[ INPUT_DESTINATION_QUERY ]"
-                }
+            form("max-w-4xl pt-4") {
+                attributes["hx-get"] = "/api/search"
+                attributes["hx-target"] = "#widget-container"
+                attributes["hx-indicator"] = "#loading-view"
+                attributes["hx-swap"] = "innerHTML"
+                
+                // Form di-hide setelah submit menggunakan HTMX
+                attributes["hx-on::after-request"] = "if(event.detail.successful) document.getElementById('search-view').classList.add('hidden');"
 
-                form {
-                    attributes["hx-get"] = "/api/search"
-                    attributes["hx-target"] = "#widget-container"
-                    attributes["hx-indicator"] = "#loading-spinner"
-                    attributes["hx-swap"] = "innerHTML"
-
-                    div("flex flex-col md:flex-row gap-3 mt-2") {
-                        div("relative flex-1") {
-                            input(InputType.text, name = "destination") {
-                                id = "search-input"
-                                classes = setOf(
-                                    "w-full", "px-4", "py-4", "bg-black", "border-2", "border-slate-700",
-                                    "text-white", "font-mono", "text-lg", "placeholder-slate-600",
-                                    "focus:outline-none", "focus:border-amber-400", "focus:ring-0",
-                                    "uppercase", "tracking-wider"
-                                )
-                                placeholder = "TOKYO, BALI, ZURICH, PARIS..."
-                                required = true
-                            }
+                div("grid grid-cols-1 md:grid-cols-12 gap-4 items-end") {
+                    // Destinasi Input
+                    div("md:col-span-8 flex flex-col") {
+                        label("text-xs font-bold uppercase text-gray-500 mb-2") { +"1. GEOGRAPHIC QUERY (CITY/COUNTRY)" }
+                        input(InputType.text, name = "destination") {
+                            id = "search-input"
+                            placeholder = "E.G. TOKYO, PARIS, BALI"
+                            required = true
+                            classes = setOf(
+                                "bg-white", "swiss-border", "p-4", "text-xl", "font-bold", "uppercase", 
+                                "tracking-wider", "text-[#050505]", "focus:outline-none", "focus:ring-4", 
+                                "focus:ring-[#E61919]/20", "focus:border-[#E61919]"
+                            )
                         }
+                    }
+
+                    // Execute Button
+                    div("md:col-span-4") {
                         button(type = ButtonType.submit) {
                             classes = setOf(
-                                "bg-amber-400", "hover:bg-amber-300", "text-black", "font-black", "font-heading",
-                                "text-lg", "px-8", "py-4", "border-2", "border-black",
-                                "shadow-[4px_4px_0px_0px_#ffffff]", "active:translate-x-1", "active:translate-y-1", "active:shadow-none",
-                                "transition-all", "cursor-pointer", "uppercase", "tracking-wider"
+                                "w-full", "bg-[#E61919]", "hover:bg-[#050505]", "text-white", "font-black", 
+                                "uppercase", "tracking-tighter", "text-xl", "p-4", "swiss-border", 
+                                "transition-colors", "cursor-pointer"
                             )
-                            +"> EXECUTE_SEARCH"
+                            +"EXECUTE ↘"
                         }
                     }
                 }
 
-                // Quick Select Chips (Industrial Terminal Tags)
-                div("mt-6 pt-4 border-t border-slate-800 flex flex-wrap items-center gap-2 text-xs font-mono") {
-                    span("text-slate-500 font-bold uppercase") { +"[ QUICK_TARGETS ]:" }
-                    val quickDestinations = listOf(
-                        "TOKYO // JPN" to "Tokyo",
-                        "BALI // IDN" to "Bali",
-                        "ZURICH // CHE" to "Zurich",
-                        "PARIS // FRA" to "Paris",
-                        "LONDON // GBR" to "London"
-                    )
-                    quickDestinations.forEach { (label, queryValue) ->
-                        button(type = ButtonType.button) {
-                            classes = setOf(
-                                "px-3", "py-1.5", "bg-slate-900", "hover:bg-amber-400", "hover:text-black",
-                                "text-slate-300", "border", "border-slate-700", "font-bold", "uppercase",
-                                "active:translate-x-0.5", "active:translate-y-0.5", "transition-all", "cursor-pointer"
-                            )
-                            attributes["hx-get"] = "/api/search?destination=$queryValue"
-                            attributes["hx-target"] = "#widget-container"
-                            attributes["hx-indicator"] = "#loading-spinner"
-                            attributes["hx-swap"] = "innerHTML"
-                            +label
+                // Budget Tier Selector
+                div("mt-8") {
+                    label("text-xs font-bold uppercase text-gray-500 mb-2 block") { +"2. LOGISTICS TIER CALCULATION" }
+                    div("grid grid-cols-3 gap-2") {
+                        // Backpacker
+                        div {
+                            input(InputType.radio, name = "budget_tier") {
+                                id = "tier-bp"
+                                value = "backpacker"
+                                classes = setOf("hidden")
+                                checked = true
+                            }
+                            label("block text-center swiss-border p-3 text-sm font-bold uppercase cursor-pointer bg-white hover:bg-gray-100 transition-colors") {
+                                htmlFor = "tier-bp"
+                                +"BACKPACKER"
+                            }
+                        }
+                        // Moderate
+                        div {
+                            input(InputType.radio, name = "budget_tier") {
+                                id = "tier-mod"
+                                value = "moderate"
+                                classes = setOf("hidden")
+                            }
+                            label("block text-center swiss-border p-3 text-sm font-bold uppercase cursor-pointer bg-white hover:bg-gray-100 transition-colors") {
+                                htmlFor = "tier-mod"
+                                +"MODERATE"
+                            }
+                        }
+                        // Luxury
+                        div {
+                            input(InputType.radio, name = "budget_tier") {
+                                id = "tier-lux"
+                                value = "luxury"
+                                classes = setOf("hidden")
+                            }
+                            label("block text-center swiss-border p-3 text-sm font-bold uppercase cursor-pointer bg-white hover:bg-gray-100 transition-colors") {
+                                htmlFor = "tier-lux"
+                                +"LUXURY"
+                            }
                         }
                     }
                 }
             }
+        }
 
-            // Mechanical Terminal Buffer Loading Indicator
-            div("htmx-indicator border-2 border-amber-400 bg-black p-6 my-8 text-center space-y-3 shadow-[6px_6px_0px_0px_#f59e0b]") {
-                id = "loading-spinner"
-                div("inline-block w-6 h-6 border-4 border-amber-400 border-t-transparent animate-spin") {}
-                p("text-amber-400 font-mono text-sm font-bold uppercase tracking-widest animate-pulse") {
-                    +">> FETCHING_TELEMETRY_DATA_FROM_EXTERNAL_APIS..."
-                }
+        // =========================================================
+        // VIEW 2: LOADING STATE (HTMX Indicator)
+        // =========================================================
+        section("htmx-indicator py-32 text-center w-full") {
+            id = "loading-view"
+            
+            h2("text-4xl md:text-6xl font-black uppercase tracking-tighter text-[#050505]") {
+                +"FETCHING DATA"
+                span("animate-blink text-[#E61919]") { +"_" }
             }
+            div("text-xs font-bold uppercase tracking-widest text-gray-500 mt-6 space-y-1") {
+                p { +"> OPENWEATHERMAP API CONNECTING..." }
+                p { +"> OVERPASS OSM EXTRACTING POI..." }
+                p { +"> EXCHANGE-RATE CALCULATING IDR..." }
+            }
+        }
 
-            // Target Container Hasil Search
-            div {
-                id = "widget-container"
-            }
+        // =========================================================
+        // CONTAINER HASIL PENCARIAN (Target HTMX)
+        // =========================================================
+        div {
+            id = "widget-container"
         }
     }
 }
