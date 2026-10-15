@@ -3,6 +3,7 @@ package com.travelwise.plugins
 import com.travelwise.model.BudgetTier
 import com.travelwise.service.TravelPlanResult
 import com.travelwise.service.TravelService
+import com.travelwise.view.PointOfInterest
 import com.travelwise.view.homeView
 import com.travelwise.view.weatherWidget
 import io.ktor.server.application.*
@@ -42,7 +43,7 @@ suspend fun ApplicationCall.handleSearch(travelService: TravelService) {
         is TravelPlanResult.Success -> {
             respondHtml {
                 body {
-                    // Formatter Anggaran Harian
+                    // Formatter Anggaran Harian (Lokal & USD)
                     val formattedDailyLocal = result.budget.dailyLocal?.let {
                         String.format(Locale.US, "%,.2f", it)
                     } ?: "N/A"
@@ -62,24 +63,67 @@ suspend fun ApplicationCall.handleSearch(travelService: TravelService) {
                         "Eksplorasi tempat wisata lokal dan nikmati kuliner khas setempat."
                     }
 
-                    // Panggil Widget UI
+                    // Mapping POI dari domain service ke layer View (PointOfInterest)
+                    val viewPoiList = result.places.map { place ->
+                        PointOfInterest(
+                            name = place.name,
+                            category = place.category ?: "ATTRACTION",
+                            osmLink = place.osmLink ?: "#",
+                            lat = place.lat,
+                            lon = place.lon
+                        )
+                    }
+
+                    // -- Menyiapkan data Dummy Cost untuk UI Swiss Brutalist (Karena Model Budget lama tidak memiliki pecahan detil)
+                    val localTotal = result.budget.dailyLocal ?: 0.0
+                    val idrTotal = localTotal * 15500 // Dummy kurs
+                    
+                    val locAcc = String.format(Locale("id", "ID"), "%,.0f", localTotal * 0.5)
+                    val locFood = String.format(Locale("id", "ID"), "%,.0f", localTotal * 0.3)
+                    val locTrans = String.format(Locale("id", "ID"), "%,.0f", localTotal * 0.2)
+                    
+                    val idrAcc = String.format(Locale("id", "ID"), "%,.0f", idrTotal * 0.5)
+                    val idrFood = String.format(Locale("id", "ID"), "%,.0f", idrTotal * 0.3)
+                    val idrTrans = String.format(Locale("id", "ID"), "%,.0f", idrTotal * 0.2)
+                    
+                    val totLocStr = String.format(Locale("id", "ID"), "%,.0f", localTotal)
+                    val totIdrStr = String.format(Locale("id", "ID"), "%,.0f", idrTotal)
+
+                    // Panggil Widget UI dengan semua parameter yang dibutuhkan
                     weatherWidget(
+                        targetCity = result.targetCity,
+                        population = String.format(Locale.US, "%,d", result.country.population),
+                        recommendedActivity = formattedActivities,
+                        seasonName = if (result.isIndoor) "Rekomendasi Indoor" else "Rekomendasi Outdoor",
+                        seasonDesc = "Engine: ${result.recommenderLabel} - Est. Cost: $formattedDailyBudget",
+                        
                         countryName = result.country.name,
                         capital = result.country.capital,
-                        population = String.format(Locale.US, "%,d", result.country.population),
-                        currencyCode = result.country.currencyCode,
-                        temperature = result.weather.temperature,
-                        humidity = result.weather.humidity,
-                        weatherDesc = result.weather.description,
-                        recommendedActivity = formattedActivities,
-                        dailyBudget = formattedDailyBudget,
-                        seasonName = if (result.isIndoor) "Rekomendasi Indoor" else "Rekomendasi Outdoor",
-                        seasonDesc = "Engine: ${result.recommenderLabel}",
                         destinationDescription = "Analisis destinasi otomatis berbasis telemetri cuaca dan lokasi.",
                         imageUrl = result.bannerUrl.ifBlank {
                             "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80"
                         },
-                        targetCity = result.targetCity
+                        
+                        // Perbaikan Tipe Data
+                        temperature = result.weather.temperature.toString(),
+                        humidity = result.weather.humidity.toString(),
+                        windSpeed = (result.weather.windSpeed ?: 12.0).toString(), 
+                        weatherDesc = result.weather.description,
+                        isOutdoor = !result.isIndoor,
+                        
+                        // Parameter Currency & Cost yang tadinya missing
+                        currencyCode = result.country.currencyCode,
+                        tierSelected = tierParam,
+                        localCostAcc = locAcc,
+                        localCostFood = locFood,
+                        localCostTrans = locTrans,
+                        idrCostAcc = idrAcc,
+                        idrCostFood = idrFood,
+                        idrCostTrans = idrTrans,
+                        totalLocalString = totLocStr,
+                        totalIdrString = totIdrStr,
+                        
+                        poiList = viewPoiList
                     )
                 }
             }

@@ -8,7 +8,7 @@ fun HTML.mainLayout(content: DIV.() -> Unit) {
         title { +"TRAVELWISE // SWISS TOURISM INDEX" }
         meta { 
             name = "viewport"
-            content = "width=device-width, initial-scale=1.0" 
+            this.content = "width=device-width, initial-scale=1.0" 
         }
         
         // Tailwind & HTMX

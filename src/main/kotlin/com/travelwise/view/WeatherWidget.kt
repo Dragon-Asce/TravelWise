@@ -3,7 +3,7 @@ package com.travelwise.view
 
 import kotlinx.html.*
 
-// Data Class untuk POI OSM
+// Data Class dummy untuk POI OSM
 data class PointOfInterest(
     val name: String,
     val category: String,
@@ -13,12 +13,12 @@ data class PointOfInterest(
 )
 
 fun FlowContent.weatherWidget(
-    // Parameter Lama yang Dikembalikan (Sesuai Routing.kt)
+    // Parameter Lama yang Dikembalikan
     targetCity: String,
     population: String,
     recommendedActivity: String,
     seasonName: String, 
-    seasonDesc: String,
+    seasonDesc: String, 
     
     // Parameter Standar
     countryName: String,
@@ -26,14 +26,14 @@ fun FlowContent.weatherWidget(
     destinationDescription: String,
     imageUrl: String,
     
-    // Weather (Matang berbentuk String)
+    // Weather
     temperature: String, 
     humidity: String,    
     windSpeed: String,   
     weatherDesc: String,
     isOutdoor: Boolean,
     
-    // Currency & Cost (Matang berbentuk String)
+    // Currency & Cost
     currencyCode: String,
     tierSelected: String, 
     localCostAcc: String,
@@ -71,7 +71,7 @@ fun FlowContent.weatherWidget(
         div("grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 mb-8") {
             div("lg:col-span-7 flex flex-col justify-end") {
                 h2("text-macro text-[#050505] break-words") {
-                    +targetCity // Menggunakan targetCity
+                    +targetCity // Menggunakan targetCity yang dikembalikan
                     br()
                     span("text-[#E61919]") { +countryName }
                 }
@@ -108,30 +108,30 @@ fun FlowContent.weatherWidget(
                     }
                 }
 
-                // Adaptive Directive
+                // Adaptive Directive (Menggunakan Recommended Activity)
                 val directiveShadow = if (!isOutdoor) "shadow-[4px_4px_0px_0px_#E61919]" else "shadow-[4px_4px_0px_0px_#050505]"
                 
                 div("swiss-border p-4 bg-white $directiveShadow") {
                     span("text-[10px] font-bold uppercase tracking-widest text-[#E61919] block mb-1") { +"ADAPTIVE SYSTEM DIRECTIVE" }
                     p("text-lg font-black uppercase leading-tight") {
-                        +recommendedActivity 
+                        +recommendedActivity // Menggunakan rekomendasi aktivitas dari backend
                     }
                 }
 
-                // Data Demografi & Musim (Memanfaatkan Parameter Routing)
+                // Data Demografi (Menggunakan Population & Season)
                 div("swiss-border p-4 bg-[#E61919] text-white") {
                     div("grid grid-cols-2 gap-4 text-xs font-bold uppercase") {
                         div {
                             span("text-white/60 block mb-1") { +"TOTAL POPULATION" }
-                            span("text-lg") { +"$population UNIT" } 
+                            span("text-lg") { +"$population UNIT" } // Menggunakan populasi
                         }
                         div {
                             span("text-white/60 block mb-1") { +"CURRENT SEASON" }
-                            span("text-lg") { +seasonName } 
+                            span("text-lg") { +seasonName } // Menggunakan Season Name
                         }
                     }
                     p("mt-4 pt-2 border-t-2 border-white/20 text-[10px] leading-relaxed") {
-                        +seasonDesc
+                        +seasonDesc // Menggunakan Season Desc
                     }
                 }
 
@@ -154,7 +154,7 @@ fun FlowContent.weatherWidget(
                         span("bg-[#E61919] text-white px-2 py-1 text-[10px] font-black uppercase") { +"TIER: $tierSelected" }
                     }
                     
-                    // PERBAIKAN HTML DSL (ThScope)
+                    // PERBAIKAN HTML DSL UNTUK TH
                     table("w-full text-left font-medium text-sm swiss-border bg-white") {
                         thead("bg-[#050505] text-white text-xs font-bold uppercase") {
                             tr {
