@@ -12,6 +12,26 @@ import io.ktor.server.routing.*
 import java.util.Locale
 import kotlinx.html.*
 
+/**
+ * Fungsi ekstensi [ApplicationCall] untuk menangani alur pemrosesan pencarian destinasi wisata.
+ *
+ * Menerima permintaan HTTP baik berupa metode `POST` (dari form HTML standar) maupun metode `GET`
+ * (dari interaksi komponen HTMX / AJAX seperti *Quick Target Chips*).
+ *
+ * Alur kerja fungsi:
+ * 1. Mengekstrak parameter `destination` atau `country` dan opsi tingkatan anggaran `tier`.
+ * 2. Memvalidasi bahwa kata kunci pencarian tidak kosong; jika kosong, merender peringatan validasi.
+ * 3. Memanggil [TravelService.getTravelPlan] secara asinkron untuk mengorkestrasi panggilan API eksternal.
+ * 4. Pada kondisi [TravelPlanResult.Success]:
+ *    - Memformat estimasi biaya harian dalam USD dan valuta lokal.
+ *    - Menggabungkan saran aktivitas rekomendasi dan tempat wisata.
+ *    - Merender komponen kartu telemetri [weatherWidget].
+ * 5. Pada kondisi [TravelPlanResult.Error]:
+ *    - Merender kotak notifikasi kegagalan telemetri dengan gaya visual brutalist.
+ *
+ * @param travelService Layanan orkestrator bisnis perencana perjalanan.
+ * @author Farhan
+ */
 suspend fun ApplicationCall.handleSearch(travelService: TravelService) {
     val parameters = if (request.httpMethod.value == "POST") {
         receiveParameters()
@@ -96,6 +116,17 @@ suspend fun ApplicationCall.handleSearch(travelService: TravelService) {
     }
 }
 
+/**
+ * Mengonfigurasi seluruh rute HTTP pada server Ktor aplikasi TravelWise.
+ *
+ * Mendaftarkan endpoint:
+ * - `GET /`: Menampilkan halaman beranda web interaktif ([homeView]).
+ * - `POST /search` & `GET /search`: Menangani formulir pencarian standar.
+ * - `POST /api/search` & `GET /api/search`: Menangani permintaan HTMX parsial untuk memperbarui kontainer widget dinamis.
+ *
+ * @param travelService Instance [TravelService] yang diinjeksi untuk pemrosesan data perjalanan.
+ * @author Farhan
+ */
 fun Application.configureRouting(travelService: TravelService) {
     routing {
         get("/") {
