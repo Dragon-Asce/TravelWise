@@ -56,7 +56,7 @@ fun HTML.mainLayout(bodyContent: DIV.() -> Unit) {
                         color: #ffffff;
                     }
 
-                    /* Photography - Full Color tapi Kontras Tinggi */
+                    /* Photography */
                     .img-swiss {
                         filter: contrast(110%) saturate(120%);
                         transition: transform 0.4s ease;
@@ -90,12 +90,9 @@ fun HTML.mainLayout(bodyContent: DIV.() -> Unit) {
                     .htmx-indicator { display: none; opacity: 0; }
                     .htmx-request .htmx-indicator, .htmx-request.htmx-indicator { display: block; opacity: 1; }
                     
-                    /* Map Filters for Brutalist Look */
-                    .leaflet-layer,
-                    .leaflet-control-zoom-in,
-                    .leaflet-control-zoom-out,
-                    .leaflet-control-attribution {
-                        filter: grayscale(100%) contrast(150%) invert(100%);
+                    /* Clean Brutalist Map Styling (Fix Blackscreen) */
+                    .leaflet-tile {
+                        filter: grayscale(100%) contrast(120%);
                     }
                 """)
             }
@@ -133,7 +130,7 @@ fun HTML.mainLayout(bodyContent: DIV.() -> Unit) {
             }
         }
 
-        // 2. Ticker Tape (Data Log Bergerak)
+        // 2. Ticker Tape
         div(classes = "max-w-7xl mx-auto w-full border-b-2 border-[#050505] bg-[#050505] text-[#E61919] overflow-hidden py-1 mb-4") {
             div(classes = "text-[10px] font-mono font-bold uppercase tracking-widest animate-ticker") {
                 +"/// SYSTEM LIVE FEED /// EXCHANGE RATE: 1 USD = 15,500 IDR (UPDATED 2 MINS AGO) /// GLOBAL METEOROLOGY: ACTIVE /// OPENSTREETMAP POI: CONNECTED /// KUNSTHAUS SWISS DESIGN ENABLED ///"

@@ -1,17 +1,16 @@
-// HomeView.kt
 package com.travelwise.view
 
 import kotlinx.html.*
 
 fun HTML.homeView() {
     mainLayout {
-        
+
         // =========================================================
         // VIEW 1: SEARCH & BUDGET FORM
         // =========================================================
         section("space-y-8 animate-enter") {
             id = "search-view"
-            
+
             div {
                 h2("text-macro mb-2") {
                     +"TARGET"
@@ -25,7 +24,7 @@ fun HTML.homeView() {
                 attributes["hx-target"] = "#widget-container"
                 attributes["hx-indicator"] = "#loading-view"
                 attributes["hx-swap"] = "innerHTML"
-                
+
                 // Form di-hide setelah submit menggunakan HTMX
                 attributes["hx-on::after-request"] = "if(event.detail.successful) document.getElementById('search-view').classList.add('hidden');"
 
@@ -35,11 +34,11 @@ fun HTML.homeView() {
                         label("text-xs font-bold uppercase text-gray-500 mb-2") { +"1. GEOGRAPHIC QUERY (CITY/COUNTRY)" }
                         input(InputType.text, name = "destination") {
                             id = "search-input"
-                            placeholder = "E.G. TOKYO, PARIS, BALI"
+                            placeholder = "E.G. TOKYO, PARIS, BALI, BEKASI"
                             required = true
                             classes = setOf(
-                                "bg-white", "swiss-border", "p-4", "text-xl", "font-bold", "uppercase", 
-                                "tracking-wider", "text-[#050505]", "focus:outline-none", "focus:ring-4", 
+                                "bg-white", "swiss-border", "p-4", "text-xl", "font-bold", "uppercase",
+                                "tracking-wider", "text-[#050505]", "focus:outline-none", "focus:ring-4",
                                 "focus:ring-[#E61919]/20", "focus:border-[#E61919]"
                             )
                         }
@@ -49,8 +48,8 @@ fun HTML.homeView() {
                     div("md:col-span-4") {
                         button(type = ButtonType.submit) {
                             classes = setOf(
-                                "w-full", "bg-[#E61919]", "hover:bg-[#050505]", "text-white", "font-black", 
-                                "uppercase", "tracking-tighter", "text-xl", "p-4", "swiss-border", 
+                                "w-full", "bg-[#E61919]", "hover:bg-[#050505]", "text-white", "font-black",
+                                "uppercase", "tracking-tighter", "text-xl", "p-4", "swiss-border",
                                 "transition-colors", "cursor-pointer"
                             )
                             +"EXECUTE ↘"
@@ -58,17 +57,16 @@ fun HTML.homeView() {
                     }
                 }
 
-                // Budget Tier Selector
+                // Budget Tier Selector (PERBAIKAN: name="tier" & uppercase values)
                 div("mt-8") {
                     label("text-xs font-bold uppercase text-gray-500 mb-2 block") { +"2. LOGISTICS TIER CALCULATION" }
                     div("grid grid-cols-3 gap-2") {
                         // Backpacker
                         div {
-                            input(InputType.radio, name = "budget_tier") {
+                            input(InputType.radio, name = "tier") {
                                 id = "tier-bp"
-                                value = "backpacker"
+                                value = "BACKPACKER"
                                 classes = setOf("hidden")
-                                checked = true
                             }
                             label("block text-center swiss-border p-3 text-sm font-bold uppercase cursor-pointer bg-white hover:bg-gray-100 transition-colors") {
                                 htmlFor = "tier-bp"
@@ -77,10 +75,11 @@ fun HTML.homeView() {
                         }
                         // Moderate
                         div {
-                            input(InputType.radio, name = "budget_tier") {
+                            input(InputType.radio, name = "tier") {
                                 id = "tier-mod"
-                                value = "moderate"
+                                value = "MODERATE"
                                 classes = setOf("hidden")
+                                checked = true
                             }
                             label("block text-center swiss-border p-3 text-sm font-bold uppercase cursor-pointer bg-white hover:bg-gray-100 transition-colors") {
                                 htmlFor = "tier-mod"
@@ -89,9 +88,9 @@ fun HTML.homeView() {
                         }
                         // Luxury
                         div {
-                            input(InputType.radio, name = "budget_tier") {
+                            input(InputType.radio, name = "tier") {
                                 id = "tier-lux"
-                                value = "luxury"
+                                value = "LUXURY"
                                 classes = setOf("hidden")
                             }
                             label("block text-center swiss-border p-3 text-sm font-bold uppercase cursor-pointer bg-white hover:bg-gray-100 transition-colors") {
@@ -105,11 +104,11 @@ fun HTML.homeView() {
         }
 
         // =========================================================
-        // VIEW 2: LOADING STATE (HTMX Indicator)
+        // VIEW 2: LOADING STATE
         // =========================================================
         section("htmx-indicator py-32 text-center w-full") {
             id = "loading-view"
-            
+
             h2("text-4xl md:text-6xl font-black uppercase tracking-tighter text-[#050505]") {
                 +"FETCHING DATA"
                 span("animate-blink text-[#E61919]") { +"_" }
@@ -121,9 +120,7 @@ fun HTML.homeView() {
             }
         }
 
-        // =========================================================
-        // CONTAINER HASIL PENCARIAN (Target HTMX)
-        // =========================================================
+        // CONTAINER HASIL PENCARIAN
         div {
             id = "widget-container"
         }

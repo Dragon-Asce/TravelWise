@@ -22,11 +22,7 @@ suspend fun ApplicationCall.handleSearch(travelService: TravelService) {
 
     val countryQuery = (parameters["country"] ?: parameters["destination"])?.trim() ?: ""
     val tierParam = parameters["tier"]?.trim() ?: "MODERATE"
-    val budgetTier = try {
-        BudgetTier.valueOf(tierParam.uppercase())
-    } catch (e: Exception) {
-        BudgetTier.MODERATE
-    }
+    val budgetTier = BudgetTier.fromParam(tierParam)
 
     if (countryQuery.isEmpty()) {
         respondHtml {
@@ -43,9 +39,8 @@ suspend fun ApplicationCall.handleSearch(travelService: TravelService) {
         is TravelPlanResult.Success -> {
             respondHtml {
                 body {
-                    // Formatter Anggaran Harian (Lokal & USD)
                     val formattedDailyLocal = result.budget.dailyLocal?.let {
-                        String.format(Locale.US, "%,.2f", it)
+                        String.format(Locale("id", "ID"), "%,.0f", it)
                     } ?: "N/A"
 
                     val formattedDailyBudget = if (result.budget.localCurrency.equals("USD", ignoreCase = true)) {
@@ -54,7 +49,6 @@ suspend fun ApplicationCall.handleSearch(travelService: TravelService) {
                         "$${result.budget.dailyUsd} USD (~$formattedDailyLocal ${result.budget.localCurrency}) / hari"
                     }
 
-                    // Formatter Rekomendasi Aktivitas
                     val formattedActivities = if (result.tips.isNotEmpty()) {
                         result.tips.joinToString(". ")
                     } else if (result.places.isNotEmpty()) {
@@ -63,8 +57,6 @@ suspend fun ApplicationCall.handleSearch(travelService: TravelService) {
                         "Eksplorasi tempat wisata lokal dan nikmati kuliner khas setempat."
                     }
 
-                    // Mapping POI dari domain service ke layer View (PointOfInterest)
-                    // Perbaikan lat & lon dengan default value 0.0 agar tidak mismatch Double? vs Double
                     val viewPoiList = result.places.map { place ->
                         PointOfInterest(
                             name = place.name,
@@ -75,27 +67,26 @@ suspend fun ApplicationCall.handleSearch(travelService: TravelService) {
                         )
                     }
 
-                    // -- Menyiapkan data Dummy Cost untuk UI Swiss Brutalist
+                    // PAKAI ANGKA DARI TRAVELSERVICE (TIDAK ADA MULTIPLIKASI GANDA)
                     val localTotal = result.budget.dailyLocal ?: 0.0
-                    val idrTotal = localTotal * 15500.0 // Dummy kurs
+                    val idrTotal = result.budget.dailyIdr ?: 0.0
 
-                    val locAcc = String.format(Locale("id", "ID"), "%,.0f", localTotal * 0.5)
-                    val locFood = String.format(Locale("id", "ID"), "%,.0f", localTotal * 0.3)
-                    val locTrans = String.format(Locale("id", "ID"), "%,.0f", localTotal * 0.2)
+                    val locAcc = String.format(Locale("id", "ID"), "%,.0f", localTotal * 0.40)
+                    val locFood = String.format(Locale("id", "ID"), "%,.0f", localTotal * 0.30)
+                    val locTrans = String.format(Locale("id", "ID"), "%,.0f", localTotal * 0.15)
 
-                    val idrAcc = String.format(Locale("id", "ID"), "%,.0f", idrTotal * 0.5)
-                    val idrFood = String.format(Locale("id", "ID"), "%,.0f", idrTotal * 0.3)
-                    val idrTrans = String.format(Locale("id", "ID"), "%,.0f", idrTotal * 0.2)
+                    val idrAcc = String.format(Locale("id", "ID"), "%,.0f", idrTotal * 0.40)
+                    val idrFood = String.format(Locale("id", "ID"), "%,.0f", idrTotal * 0.30)
+                    val idrTrans = String.format(Locale("id", "ID"), "%,.0f", idrTotal * 0.15)
 
                     val totLocStr = String.format(Locale("id", "ID"), "%,.0f", localTotal)
                     val totIdrStr = String.format(Locale("id", "ID"), "%,.0f", idrTotal)
 
-                    // Panggil Widget UI dengan semua parameter yang dibutuhkan
                     weatherWidget(
                         targetCity = result.targetCity,
                         population = String.format(Locale.US, "%,d", result.country.population),
                         recommendedActivity = formattedActivities,
-                        seasonName = if (result.isIndoor) "Rekomendasi Indoor" else "Rekomendasi Outdoor",
+                        seasonName = result.seasonName, // MENAMPILKAN MUSIM NYATA
                         seasonDesc = "Engine: ${result.recommenderLabel} | Est. Cost: $formattedDailyBudget",
 
                         countryName = result.country.name,
@@ -105,16 +96,14 @@ suspend fun ApplicationCall.handleSearch(travelService: TravelService) {
                             "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80"
                         },
 
-                        // Perbaikan Tipe Data
                         temperature = result.weather.temperature.toString(),
                         humidity = result.weather.humidity.toString(),
                         windSpeed = (result.weather.windSpeed ?: 12.0).toString(),
                         weatherDesc = result.weather.description,
                         isOutdoor = !result.isIndoor,
 
-                        // Parameter Currency & Cost
-                        currencyCode = result.country.currencyCode,
-                        tierSelected = tierParam,
+                        currencyCode = result.budget.localCurrency,
+                        tierSelected = budgetTier.name,
                         localCostAcc = locAcc,
                         localCostFood = locFood,
                         localCostTrans = locTrans,
@@ -124,6 +113,8 @@ suspend fun ApplicationCall.handleSearch(travelService: TravelService) {
                         totalLocalString = totLocStr,
                         totalIdrString = totIdrStr,
 
+                        mapLat = result.weather.lat ?: 0.0,
+                        mapLon = result.weather.lon ?: 0.0,
                         poiList = viewPoiList
                     )
                 }
