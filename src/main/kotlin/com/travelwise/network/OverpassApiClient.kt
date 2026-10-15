@@ -3,6 +3,7 @@ package com.travelwise.network
 import com.travelwise.model.Place
 import io.ktor.client.*
 import io.ktor.client.plugins.*
+import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
@@ -32,13 +33,13 @@ class OverpassApiClient(
         val ql = """
             [out:json][timeout:15];
             (
-              node["tourism"~"museum|gallery|attraction|viewpoint"]($around);
-              way["tourism"~"museum|gallery|attraction|viewpoint"]($around);
-              node["historic"]($around);
-              way["historic"]($around);
-              node["leisure"~"park|garden"]($around);
-              way["leisure"~"park|garden"]($around);
-              node["amenity"~"cafe|restaurant"]($around);
+              node["tourism"~"museum|gallery|attraction|viewpoint"]["name"]($around);
+              way["tourism"~"museum|gallery|attraction|viewpoint"]["name"]($around);
+              node["historic"]["name"]($around);
+              way["historic"]["name"]($around);
+              node["leisure"~"park|garden"]["name"]($around);
+              way["leisure"~"park|garden"]["name"]($around);
+              node["amenity"~"cafe|restaurant"]["name"]($around);
             );
             out center 30;
         """.trimIndent()
@@ -49,9 +50,13 @@ class OverpassApiClient(
                     url = endpoint,
                     formParameters = parameters { append("data", ql) }
                 ) {
+                    // Povinná hlavička User-Agent pre zamedzenie blokovania Overpass API (HTTP 429)
+                    headers {
+                        append(HttpHeaders.UserAgent, "TravelWiseApp/1.0 (Contact: admin@travelwise.local)")
+                    }
                     timeout {
-                        connectTimeoutMillis = 8_000
-                        requestTimeoutMillis = 12_000
+                        connectTimeoutMillis = 10_000
+                        requestTimeoutMillis = 15_000
                     }
                 }.bodyAsText()
 
@@ -64,15 +69,16 @@ class OverpassApiClient(
                         .distinctBy { it.name.lowercase() }
 
                     if (parsedPlaces.isNotEmpty()) {
+                        println("[OverpassApiClient] Úspešne načítané reálne miesta z: $endpoint")
                         return parsedPlaces
                     }
                 }
             } catch (e: Exception) {
-                println("[OverpassApiClient] Mirror $endpoint gagal: ${e.localizedMessage}. Mencoba mirror berikutnya...")
+                println("[OverpassApiClient] Zrkadlo $endpoint zlyhalo: ${e.localizedMessage}. Skúšam ďalšie...")
             }
         }
 
-        println("[OverpassApiClient] Seluruh mirror Overpass tidak merespons. Menggunakan lokasi sekitar.")
+        println("[OverpassApiClient] Žiadne zrkadlo Overpass neodpovedá. Používam náhradné miesta.")
         return getFallbackPlaces(lat, lon)
     }
 
@@ -102,7 +108,6 @@ class OverpassApiClient(
         val placeLat = el["lat"]?.jsonPrimitive?.doubleOrNull ?: center?.get("lat")?.jsonPrimitive?.doubleOrNull
         val placeLon = el["lon"]?.jsonPrimitive?.doubleOrNull ?: center?.get("lon")?.jsonPrimitive?.doubleOrNull
 
-        // mapUrl tidak perlu dikirim karena dihitung otomatis oleh data class Place
         return Place(
             name = name,
             category = category,
@@ -113,18 +118,11 @@ class OverpassApiClient(
 
     private fun getFallbackPlaces(lat: Double, lon: Double): List<Place> {
         return listOf(
-            Place(
-                name = "Local Cultural Center",
-                category = "museum",
-                lat = lat + 0.005,
-                lon = lon + 0.005
-            ),
-            Place(
-                name = "Central City Square",
-                category = "park",
-                lat = lat - 0.005,
-                lon = lon - 0.005
-            )
+            Place(name = "Central Cultural Museum", category = "museum", lat = lat + 0.005, lon = lon + 0.005),
+            Place(name = "City Botanical Garden", category = "park", lat = lat - 0.005, lon = lon - 0.005),
+            Place(name = "Grand Historical Landmark", category = "historic", lat = lat + 0.003, lon = lon - 0.003),
+            Place(name = "Artisan Heritage Cafe", category = "cafe", lat = lat - 0.003, lon = lon + 0.003),
+            Place(name = "Panoramic City Viewpoint", category = "attraction", lat = lat + 0.007, lon = lon + 0.007)
         )
     }
 }
