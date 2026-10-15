@@ -1,10 +1,9 @@
+// WeatherWidget.kt
 package com.travelwise.view
 
 import kotlinx.html.*
-import java.text.NumberFormat
-import java.util.Locale
 
-// Data Class dummy untuk POI OSM
+// Data Class untuk POI OSM
 data class PointOfInterest(
     val name: String,
     val category: String,
@@ -14,29 +13,37 @@ data class PointOfInterest(
 )
 
 fun FlowContent.weatherWidget(
+    // Parameter Lama yang Dikembalikan (Sesuai Routing.kt)
+    targetCity: String,
+    population: String,
+    recommendedActivity: String,
+    seasonName: String, 
+    seasonDesc: String,
+    
+    // Parameter Standar
     countryName: String,
     capital: String,
     destinationDescription: String,
     imageUrl: String,
     
-    // Weather
-    temperature: Double,
-    humidity: Int,
-    windSpeed: Double,
+    // Weather (Matang berbentuk String)
+    temperature: String, 
+    humidity: String,    
+    windSpeed: String,   
     weatherDesc: String,
     isOutdoor: Boolean,
     
-    // Currency
+    // Currency & Cost (Matang berbentuk String)
     currencyCode: String,
-    tierSelected: String, // backpacker, moderate, luxury
-    
-    // Simulated Costs
-    localCostAcc: Double,
-    localCostFood: Double,
-    localCostTrans: Double,
-    idrCostAcc: Double,
-    idrCostFood: Double,
-    idrCostTrans: Double,
+    tierSelected: String, 
+    localCostAcc: String,
+    localCostFood: String,
+    localCostTrans: String,
+    idrCostAcc: String,
+    idrCostFood: String,
+    idrCostTrans: String,
+    totalLocalString: String,
+    totalIdrString: String,
     
     // Map & POI
     mapLat: Double = 35.6762,
@@ -44,11 +51,6 @@ fun FlowContent.weatherWidget(
     poiList: List<PointOfInterest>
 ) {
     
-    val totalLocal = localCostAcc + localCostFood + localCostTrans
-    val totalIdr = idrCostAcc + idrCostFood + idrCostTrans
-    
-    // Locale & Formatter
-    val idrFormatter = NumberFormat.getNumberInstance(Locale("id", "ID"))
     val sym = if (currencyCode == "JPY") "¥" else if (currencyCode == "USD") "$" else if (currencyCode == "EUR") "€" else "Rp"
 
     section("pb-12 animate-enter") {
@@ -69,7 +71,7 @@ fun FlowContent.weatherWidget(
         div("grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 mb-8") {
             div("lg:col-span-7 flex flex-col justify-end") {
                 h2("text-macro text-[#050505] break-words") {
-                    +capital
+                    +targetCity // Menggunakan targetCity
                     br()
                     span("text-[#E61919]") { +countryName }
                 }
@@ -79,7 +81,7 @@ fun FlowContent.weatherWidget(
             }
             
             div("lg:col-span-5 img-wrap bg-white p-2 swiss-border shadow-[8px_8px_0px_0px_#050505]") {
-                img(src = imageUrl, alt = capital) {
+                img(src = imageUrl, alt = targetCity) {
                     classes = setOf("w-full", "h-64", "object-cover", "img-swiss")
                 }
                 div("text-[10px] font-bold uppercase mt-2 text-right text-gray-500") { +"IMG.SRC: UNSPLASH API" }
@@ -96,24 +98,40 @@ fun FlowContent.weatherWidget(
                 div("bg-[#050505] text-white p-4") {
                     span("text-[10px] font-bold uppercase tracking-widest text-gray-400 block mb-2") { +"REAL-TIME WEATHER (OPENWEATHER)" }
                     div("flex items-end gap-2") {
-                        span("text-6xl font-black tracking-tighter") { +"${temperature.toInt()}°" }
+                        span("text-6xl font-black tracking-tighter") { +"$temperature°" }
                         span("text-2xl font-bold mb-1") { +"C" }
                     }
                     span("text-sm font-bold uppercase mt-1 block text-[#E61919]") { +weatherDesc }
                     div("flex gap-4 text-xs font-bold uppercase mt-4 text-gray-400") {
                         span { +"HUMIDITY: $humidity%" }
-                        span { +"WIND: ${windSpeed.toInt()} KM/H" }
+                        span { +"WIND: $windSpeed KM/H" }
                     }
                 }
 
                 // Adaptive Directive
                 val directiveShadow = if (!isOutdoor) "shadow-[4px_4px_0px_0px_#E61919]" else "shadow-[4px_4px_0px_0px_#050505]"
-                val directiveText = if (!isOutdoor) "UMBRELLA REQUIRED. INDOOR ROUTING ACTIVATED." else "OPTIMAL CONDITIONS. OUTDOOR EXPLORATION ADVISED."
                 
                 div("swiss-border p-4 bg-white $directiveShadow") {
                     span("text-[10px] font-bold uppercase tracking-widest text-[#E61919] block mb-1") { +"ADAPTIVE SYSTEM DIRECTIVE" }
                     p("text-lg font-black uppercase leading-tight") {
-                        +directiveText
+                        +recommendedActivity 
+                    }
+                }
+
+                // Data Demografi & Musim (Memanfaatkan Parameter Routing)
+                div("swiss-border p-4 bg-[#E61919] text-white") {
+                    div("grid grid-cols-2 gap-4 text-xs font-bold uppercase") {
+                        div {
+                            span("text-white/60 block mb-1") { +"TOTAL POPULATION" }
+                            span("text-lg") { +"$population UNIT" } 
+                        }
+                        div {
+                            span("text-white/60 block mb-1") { +"CURRENT SEASON" }
+                            span("text-lg") { +seasonName } 
+                        }
+                    }
+                    p("mt-4 pt-2 border-t-2 border-white/20 text-[10px] leading-relaxed") {
+                        +seasonDesc
                     }
                 }
 
@@ -136,34 +154,35 @@ fun FlowContent.weatherWidget(
                         span("bg-[#E61919] text-white px-2 py-1 text-[10px] font-black uppercase") { +"TIER: $tierSelected" }
                     }
                     
+                    // PERBAIKAN HTML DSL (ThScope)
                     table("w-full text-left font-medium text-sm swiss-border bg-white") {
                         thead("bg-[#050505] text-white text-xs font-bold uppercase") {
                             tr {
-                                th("p-3 swiss-border-r") { +"KATEGORI" }
-                                th("p-3 swiss-border-r") { +"LOKAL ($currencyCode)" }
-                                th("p-3") { +"KONVERSI (IDR)" }
+                                th(classes = "p-3 swiss-border-r") { +"KATEGORI" }
+                                th(classes = "p-3 swiss-border-r") { +"LOKAL ($currencyCode)" }
+                                th(classes = "p-3") { +"KONVERSI (IDR)" }
                             }
                         }
                         tbody {
                             tr("swiss-border-t") {
                                 td("p-3 swiss-border-r font-bold") { +"AKOMODASI" }
-                                td("p-3 swiss-border-r") { +"$sym ${idrFormatter.format(localCostAcc)}" }
-                                td("p-3 text-gray-500") { +"Rp ${idrFormatter.format(idrCostAcc)}" }
+                                td("p-3 swiss-border-r") { +"$sym $localCostAcc" }
+                                td("p-3 text-gray-500") { +"Rp $idrCostAcc" }
                             }
                             tr("swiss-border-t") {
                                 td("p-3 swiss-border-r font-bold") { +"KONSUMSI" }
-                                td("p-3 swiss-border-r") { +"$sym ${idrFormatter.format(localCostFood)}" }
-                                td("p-3 text-gray-500") { +"Rp ${idrFormatter.format(idrCostFood)}" }
+                                td("p-3 swiss-border-r") { +"$sym $localCostFood" }
+                                td("p-3 text-gray-500") { +"Rp $idrCostFood" }
                             }
                             tr("swiss-border-t") {
                                 td("p-3 swiss-border-r font-bold") { +"TRANSPORTASI" }
-                                td("p-3 swiss-border-r") { +"$sym ${idrFormatter.format(localCostTrans)}" }
-                                td("p-3 text-gray-500") { +"Rp ${idrFormatter.format(idrCostTrans)}" }
+                                td("p-3 swiss-border-r") { +"$sym $localCostTrans" }
+                                td("p-3 text-gray-500") { +"Rp $idrCostTrans" }
                             }
                             tr("swiss-border-t bg-gray-100") {
                                 td("p-3 swiss-border-r font-black") { +"TOTAL ESTIMASI" }
-                                td("p-3 swiss-border-r font-black text-[#E61919]") { +"$sym ${idrFormatter.format(totalLocal)}" }
-                                td("p-3 font-black text-[#E61919]") { +"Rp ${idrFormatter.format(totalIdr)}" }
+                                td("p-3 swiss-border-r font-black text-[#E61919]") { +"$sym $totalLocalString" }
+                                td("p-3 font-black text-[#E61919]") { +"Rp $totalIdrString" }
                             }
                         }
                     }

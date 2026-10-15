@@ -1,3 +1,4 @@
+// Layout.kt
 package com.travelwise.view
 
 import kotlinx.html.*
@@ -5,7 +6,10 @@ import kotlinx.html.*
 fun HTML.mainLayout(content: DIV.() -> Unit) {
     head {
         title { +"TRAVELWISE // SWISS TOURISM INDEX" }
-        meta { name = "viewport"; content = "width=device-width, initial-scale=1.0" }
+        meta { 
+            name = "viewport"
+            content = "width=device-width, initial-scale=1.0" 
+        }
         
         // Tailwind & HTMX
         script { src = "https://cdn.tailwindcss.com" }
