@@ -2,6 +2,22 @@ package com.travelwise.view
 
 import kotlinx.html.*
 
+/**
+ * Pembangun tampilan halaman beranda (*Home View*) utama aplikasi TravelWise menggunakan Ktor HTML DSL.
+ *
+ * Komponen ini menyusun dua tampilan utama:
+ * 1. **Formulir Pencarian & Anggaran (*Search View*)**:
+ *    - Masukan teks kueri geografis destinasi (nama kota atau negara) dengan shortcut `Ctrl+K`.
+ *    - Tombol radio kustom bergaya *Swiss Brutalism* untuk memilih tingkatan anggaran ([com.travelwise.model.BudgetTier]).
+ *    - Integrasi HTMX (`hx-get="/api/search"`, `hx-target="#widget-container"`, `hx-indicator="#loading-view"`)
+ *      untuk pengiriman formulir asinkron tanpa *page reload*.
+ * 2. **Indikator Pemuatan Data (*Loading View*)**:
+ *    - Status visual yang aktif selama HTMX memproses permintaan ke API eksternal.
+ * 3. **Kontainer Hasil (*Widget Container*)**:
+ *    - Elemen `div` penampung tempat hasil respons kartu telemetri [weatherWidget] disisipkan.
+ *
+ * @receiver Objek [HTML] dari DSL pembangun halaman Ktor.
+ */
 fun HTML.homeView() {
     mainLayout {
 

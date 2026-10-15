@@ -2,7 +2,19 @@ package com.travelwise.view
 
 import kotlinx.html.*
 
-// PERBAIKAN 1: Mengubah nama parameter dari 'content' menjadi 'pageContent'
+/**
+ * Tata letak utama (*Master Layout*) untuk seluruh antarmuka web aplikasi TravelWise.
+ *
+ * Mengadopsi prinsip desain visual **Swiss Style (International Typographic Style) & Brutalism**:
+ * - Tipografi tegas berbasis font *Inter* dengan *macro-typography* dan teks serba kapital (*uppercase*).
+ * - Garis pembatas tebal monokrom (*swiss-border*) dengan aksen merah berani (`#E61919`).
+ * - Lapisan *Noise SVG overlay* dan animasi *Ticker Tape* teks berjalan di bagian atas halaman.
+ * - Pustaka pihak ketiga terintegrasi: **Tailwind CSS**, **HTMX**, dan **Leaflet.js** untuk peta interaktif.
+ * - Penangan pintasan papan ketik global (*keyboard shortcut*) `Ctrl+K` untuk langsung fokus ke input pencarian.
+ *
+ * @receiver Objek pembangun [HTML] Ktor.
+ * @param pageContent Fungsi ekstensi lambda untuk merender konten utama di dalam kontainer `<main>`.
+ */
 fun HTML.mainLayout(pageContent: DIV.() -> Unit) {
     head {
         title { +"TRAVELWISE // SWISS TOURISM INDEX" }

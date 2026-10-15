@@ -9,8 +9,29 @@ import com.travelwise.plugins.configureRouting
 import com.travelwise.service.TravelService
 import io.ktor.server.application.*
 
+/**
+ * Titik masuk utama (*Main Entry Point*) dari server aplikasi TravelWise.
+ *
+ * Menginisialisasi dan mendelegasikan siklus hidup aplikasi ke Netty Engine via [io.ktor.server.netty.EngineMain].
+ * Konfigurasi port, host, dan modul dibaca secara otomatis dari berkas `resources/application.conf`.
+ *
+ * @param args Argumen baris perintah (*command line arguments*) yang dilewatkan saat peluncuran aplikasi.
+ */
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
+/**
+ * Modul utama Ktor yang menginisialisasi arsitektur aplikasi TravelWise.
+ *
+ * Fungsi ekstensi [Application] ini menjalankan serangkaian konfigurasi:
+ * 1. **Resolusi Konfigurasi**: Membaca parameter endpoint API dan API Key dari `application.conf`
+ *    atau variabel lingkungan (*environment variables*) sistem dengan nilai fallback bawaan.
+ * 2. **Instansiasi API Clients**: Menginisialisasi seluruh klien jaringan eksternal
+ *    ([CountryApiClient], [WeatherApiClient], [ExchangeRateApiClient], [OverpassApiClient], [UnsplashApiClient]).
+ * 3. **Penerapan Dependency Injection**: Menginjeksi instance API client ke dalam lapisan logika bisnis [TravelService].
+ * 4. **Konfigurasi Routing**: Mendaftarkan seluruh rute HTTP web dan API melalui [configureRouting].
+ *
+ * @receiver Instance [Application] server Ktor yang sedang aktif.
+ */
 fun Application.module() {
     val cfg = environment.config
 

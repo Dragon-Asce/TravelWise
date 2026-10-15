@@ -2,6 +2,15 @@ package com.travelwise.view
 
 import kotlinx.html.*
 
+/**
+ * Data model representasi Point of Interest (POI) untuk ditampilkan pada kartu wisata antarmuka web.
+ *
+ * @property name Nama atraksi atau tempat wisata (contoh: "Senso-ji", "Eiffel Tower").
+ * @property category Kategori tempat (misal: "MUSEUM", "CAFE", "PARK", "ATTRACTION").
+ * @property osmLink Tautan langsung menuju peta OpenStreetMap dengan penanda lokasi.
+ * @property lat Koordinat garis lintang (*latitude*) posisi POI.
+ * @property lon Koordinat garis bujur (*longitude*) posisi POI.
+ */
 data class PointOfInterest(
     val name: String,
     val category: String,
@@ -10,6 +19,48 @@ data class PointOfInterest(
     val lon: Double = 0.0
 )
 
+/**
+ * Komponen pembangun tampilan hasil rencana perjalanan (*Travel Result Dashboard*) bergaya *Swiss Brutalism*.
+ *
+ * Merender dashboard interaktif komprehensif yang terdiri atas:
+ * 1. **Header & Tipografi Judul**: Nama kota & negara dalam format *macro-typography* serta foto lanskap resolusi tinggi dari Unsplash.
+ * 2. **Panel Cuaca Real-Time**: Suhu udara (°C), deskripsi kondisi cuaca, kelembapan (%), kecepatan angin, dan arahan adaptif (*Adaptive System Directive*).
+ * 3. **Data Demografi & Musim**: Informasi total populasi serta nama dan deskripsi musim astronomis berjalan.
+ * 4. **Radar Telemetri (Peta Interaktif)**: Kontainer peta Leaflet.js dengan layer gelap Stadia Maps (*Alidade Smooth Dark*) dan marker kontras Swiss.
+ * 5. **Tabel Anggaran Finansial**: Breakdown biaya harian (akomodasi, konsumsi, transportasi, aktivitas) dalam valuta lokal dan konversi Rupiah (IDR).
+ * 6. **Daftar Kartu POI Adaptif**: Kartu-kartu tempat wisata nyata dari OpenStreetMap yang disesuaikan dengan kondisi cuaca (indoor/outdoor).
+ *
+ * @receiver Objek [FlowContent] dari Ktor HTML DSL.
+ * @param targetCity Nama kota fokus pengamatan.
+ * @param population Format string jumlah populasi penduduk kota/negara.
+ * @param recommendedActivity Rekomendasi aktivitas adaptif cuaca.
+ * @param seasonName Nama musim aktual berjalan (contoh: "MUSIM HUJAN", "MUSIM PANAS").
+ * @param seasonDesc Deskripsi ringkas mengenai karakteristik musim saat ini.
+ * @param countryName Nama negara destinasi.
+ * @param capital Nama ibu kota resmi negara.
+ * @param destinationDescription Deskripsi ringkas profil destinasi.
+ * @param imageUrl Tautan foto utama kota dari Unsplash API.
+ * @param temperature Nilai suhu dalam derajat Celsius (string).
+ * @param humidity Nilai kelembapan udara (string).
+ * @param windSpeed Kecepatan angin dalam km/h (string).
+ * @param weatherDesc Keterangan kondisi cuaca aktual.
+ * @param isOutdoor Menandakan apakah cuaca mendukung aktivitas luar ruangan (*outdoor*).
+ * @param currencyCode Kode 3-huruf mata uang resmi (contoh: "JPY", "USD", "IDR").
+ * @param tierSelected Tingkatan anggaran yang dipilih (contoh: "BACKPACKER", "MODERATE", "LUXURY").
+ * @param localCostAcc Biaya akomodasi dalam valuta lokal.
+ * @param localCostFood Biaya makan & minum dalam valuta lokal.
+ * @param localCostTrans Biaya transportasi dalam valuta lokal.
+ * @param idrCostAcc Biaya akomodasi yang dikonversi ke Rupiah.
+ * @param idrCostFood Biaya makan & minum yang dikonversi ke Rupiah.
+ * @param idrCostTrans Biaya transportasi yang dikonversi ke Rupiah.
+ * @param totalLocalString Total estimasi biaya harian dalam valuta lokal.
+ * @param totalIdrString Total estimasi biaya harian dalam Rupiah.
+ * @param mapLat Titik koordinat latitude untuk penempatan pusat peta Leaflet.
+ * @param mapLon Titik koordinat longitude untuk penempatan pusat peta Leaflet.
+ * @param poiList Koleksi objek [PointOfInterest] hasil kurasi OpenStreetMap.
+ * @param localCostAct Biaya aktivitas & tiket dalam valuta lokal.
+ * @param idrCostAct Biaya aktivitas & tiket yang dikonversi ke Rupiah.
+ */
 fun FlowContent.weatherWidget(
     targetCity: String,
     population: String,
@@ -279,6 +330,15 @@ fun FlowContent.weatherWidget(
     }
 }
 
+/**
+ * Komponen pembangun tampilan pesan galat (*Error View*) saat destinasi tidak ditemukan atau terjadi kegagalan sistem.
+ *
+ * Mengusung gaya visual *Swiss Brutalism High-Contrast* dengan latar merah menyala (`#E61919`),
+ * teks 404 berukuran raksasa, kotak pesan error berlatar hitam pekat, serta tombol kalibrasi ulang pencarian.
+ *
+ * @receiver Objek [FlowContent] dari Ktor HTML DSL.
+ * @param errorMessage Pesan galat deskriptif yang ingin disampaikan kepada pengguna.
+ */
 fun FlowContent.weatherErrorWidget(errorMessage: String) {
     section("bg-[#E61919] text-[#050505] p-8 md:p-16 text-center animate-enter relative overflow-hidden min-h-[60vh] flex flex-col justify-center") {
         id = "result-view"
