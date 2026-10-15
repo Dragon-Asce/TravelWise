@@ -10,10 +10,9 @@ import kotlinx.serialization.json.*
 
 class OverpassApiClient(
     private val client: HttpClient = HttpClients.default,
-    private val radiusMeters: Int = 10_000
+    private val radiusMeters: Int = 8_000
 ) : ApiClient<List<Place>> {
 
-    // Daftar Mirror Server Overpass API resmi untuk failover otomatis jika server utama down/timeout
     private val mirrorEndpoints = listOf(
         "https://overpass-api.de/api/interpreter",
         "https://overpass.kumi.systems/api/interpreter",
@@ -30,19 +29,20 @@ class OverpassApiClient(
     suspend fun fetchPlaces(lat: Double, lon: Double): List<Place> {
         val around = "around:$radiusMeters,$lat,$lon"
 
-        // Query Overpass QL yang dioptimasi menggunakan Union Block tunggal (jauh lebih cepat)
         val ql = """
-            [out:json][timeout:12];
+            [out:json][timeout:15];
             (
-              nwr["tourism"~"museum|gallery|attraction"]["name"]($around);
-              nwr["amenity"="cafe"]["name"]($around);
-              nwr["leisure"="park"]["name"]($around);
-              nwr["historic"]["name"]($around);
+              node["tourism"~"museum|gallery|attraction|viewpoint"]($around);
+              way["tourism"~"museum|gallery|attraction|viewpoint"]($around);
+              node["historic"]($around);
+              way["historic"]($around);
+              node["leisure"~"park|garden"]($around);
+              way["leisure"~"park|garden"]($around);
+              node["amenity"~"cafe|restaurant"]($around);
             );
-            out center 25;
+            out center 30;
         """.trimIndent()
 
-        // Mencoba setiap mirror server secara berurutan jika terjadi timeout
         for (endpoint in mirrorEndpoints) {
             try {
                 val text = client.submitForm(
@@ -50,8 +50,8 @@ class OverpassApiClient(
                     formParameters = parameters { append("data", ql) }
                 ) {
                     timeout {
-                        connectTimeoutMillis = 10_000
-                        requestTimeoutMillis = 15_000
+                        connectTimeoutMillis = 8_000
+                        requestTimeoutMillis = 12_000
                     }
                 }.bodyAsText()
 
@@ -60,6 +60,7 @@ class OverpassApiClient(
 
                 if (elements != null && elements.isNotEmpty()) {
                     val parsedPlaces = elements.mapNotNull { parseElement(it.jsonObject) }
+                        .filter { it.name.isNotBlank() }
                         .distinctBy { it.name.lowercase() }
 
                     if (parsedPlaces.isNotEmpty()) {
@@ -67,12 +68,11 @@ class OverpassApiClient(
                     }
                 }
             } catch (e: Exception) {
-                println("[OverpassApiClient] Mirror $endpoint timeout/gagal: ${e.localizedMessage}. Mencoba mirror berikutnya...")
+                println("[OverpassApiClient] Mirror $endpoint gagal: ${e.localizedMessage}. Mencoba mirror berikutnya...")
             }
         }
 
-        // Fallback tempat wisata cadangan jika seluruh server Overpass API publik gagal/down
-        println("[OverpassApiClient] Seluruh mirror Overpass tidak merespons. Menggunakan fallback tempat lokal.")
+        println("[OverpassApiClient] Seluruh mirror Overpass tidak merespons. Menggunakan lokasi sekitar.")
         return getFallbackPlaces(lat, lon)
     }
 
@@ -80,31 +80,51 @@ class OverpassApiClient(
 
     private fun parseElement(el: JsonObject): Place? {
         val tags = el["tags"]?.jsonObject ?: return null
-        val name = tags.str("name:en") ?: tags.str("name") ?: return null
+
+        val name = tags.str("name:en")
+            ?: tags.str("name:id")
+            ?: tags.str("name")
+            ?: return null
 
         val category = when {
             tags.str("tourism") == "museum" -> "museum"
             tags.str("tourism") == "gallery" -> "gallery"
             tags.str("tourism") == "attraction" -> "attraction"
+            tags.str("tourism") == "viewpoint" -> "attraction"
             tags.str("amenity") == "cafe" -> "cafe"
-            tags.str("leisure") == "park" -> "park"
+            tags.str("amenity") == "restaurant" -> "cafe"
+            tags.str("leisure") in listOf("park", "garden") -> "park"
             tags.containsKey("historic") -> "historic"
             else -> "attraction"
         }
 
         val center = el["center"]?.jsonObject
-        val lat = el["lat"]?.jsonPrimitive?.doubleOrNull ?: center?.get("lat")?.jsonPrimitive?.doubleOrNull
-        val lon = el["lon"]?.jsonPrimitive?.doubleOrNull ?: center?.get("lon")?.jsonPrimitive?.doubleOrNull
+        val placeLat = el["lat"]?.jsonPrimitive?.doubleOrNull ?: center?.get("lat")?.jsonPrimitive?.doubleOrNull
+        val placeLon = el["lon"]?.jsonPrimitive?.doubleOrNull ?: center?.get("lon")?.jsonPrimitive?.doubleOrNull
 
-        return Place(name = name, category = category, lat = lat, lon = lon)
+        // mapUrl tidak perlu dikirim karena dihitung otomatis oleh data class Place
+        return Place(
+            name = name,
+            category = category,
+            lat = placeLat,
+            lon = placeLon
+        )
     }
 
     private fun getFallbackPlaces(lat: Double, lon: Double): List<Place> {
         return listOf(
-            Place(name = "Central Cultural Museum", category = "museum", lat = lat + 0.01, lon = lon + 0.01),
-            Place(name = "City Botanical Park", category = "park", lat = lat - 0.01, lon = lon - 0.01),
-            Place(name = "Grand Historical Square", category = "historic", lat = lat + 0.005, lon = lon - 0.005),
-            Place(name = "Artisan Local Cafe", category = "cafe", lat = lat - 0.005, lon = lon + 0.005)
+            Place(
+                name = "Local Cultural Center",
+                category = "museum",
+                lat = lat + 0.005,
+                lon = lon + 0.005
+            ),
+            Place(
+                name = "Central City Square",
+                category = "park",
+                lat = lat - 0.005,
+                lon = lon - 0.005
+            )
         )
     }
 }
