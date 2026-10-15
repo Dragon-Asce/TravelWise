@@ -41,7 +41,9 @@ fun FlowContent.weatherWidget(
 
     mapLat: Double = 0.0,
     mapLon: Double = 0.0,
-    poiList: List<PointOfInterest>
+    poiList: List<PointOfInterest>,
+    localCostAct: String = "",
+    idrCostAct: String = ""
 ) {
 
     val sym = when (currencyCode.uppercase()) {
@@ -140,6 +142,7 @@ fun FlowContent.weatherWidget(
                     div("text-[10px] font-bold uppercase tracking-widest text-gray-500 block mb-2 px-2") { +"RADAR TELEMETRY (OPENSTREETMAP)" }
                     div("w-full h-[220px] bg-[#111111] z-0") {
                         id = "leaflet-map"
+                        attributes["style"] = "height: 220px; width: 100%;"
                     }
                 }
             }
@@ -177,6 +180,13 @@ fun FlowContent.weatherWidget(
                                 td("p-3 swiss-border-r font-bold") { +"TRANSPORTASI" }
                                 td("p-3 swiss-border-r") { +"$sym$localCostTrans" }
                                 td("p-3 text-gray-500") { +"Rp $idrCostTrans" }
+                            }
+                            if (localCostAct.isNotEmpty()) {
+                                tr("swiss-border-t") {
+                                    td("p-3 swiss-border-r font-bold") { +"AKTIVITAS & TIKET" }
+                                    td("p-3 swiss-border-r") { +"$sym$localCostAct" }
+                                    td("p-3 text-gray-500") { +"Rp $idrCostAct" }
+                                }
                             }
                             tr("swiss-border-t bg-gray-100") {
                                 td("p-3 swiss-border-r font-black") { +"TOTAL ESTIMASI" }
@@ -220,7 +230,13 @@ fun FlowContent.weatherWidget(
                         var mapContainer = document.getElementById('leaflet-map');
                         if (!mapContainer) return;
 
-                        // Bersihkan instance Leaflet lama agar tidak terjadi bentrok elemen DOM
+                        // Bersihkan instance Leaflet lama secara aman
+                        if (window._twLeafletMap) {
+                            try {
+                                window._twLeafletMap.remove();
+                            } catch(e) {}
+                            window._twLeafletMap = null;
+                        }
                         if (mapContainer._leaflet_id) {
                             mapContainer._leaflet_id = null;
                             mapContainer.innerHTML = '';
@@ -230,6 +246,7 @@ fun FlowContent.weatherWidget(
                             zoomControl: false,
                             attributionControl: false
                         }).setView([$mapLat, $mapLon], 12);
+                        window._twLeafletMap = map;
                         
                         // Menghubungkan API Key Stadia Maps ke Tile Layer Alidade Smooth Dark
                         var apiKey = "eyJhbGciOiJIUzI1NiJ9.eyJhIjoiYWNfY2owc280dnYiLCJqdGkiOiJkOWRmNjFiOTg4Mzg0ZGFhYWFkZmI3YmVhZjdhMWU0OSJ9._hBQjsEe8r4S3tAz5cKztdr1jpli1sc7J3ksiksLSro";
@@ -251,9 +268,11 @@ fun FlowContent.weatherWidget(
                         
                         // Memaksa render ulang dimensi peta setelah kontainer HTMX siap
                         setTimeout(function() { 
-                            map.invalidateSize(); 
-                        }, 250);
-                    }, 100);
+                            if (window._twLeafletMap) {
+                                window._twLeafletMap.invalidateSize();
+                            }
+                        }, 200);
+                    }, 50);
                 """)
             }
         }

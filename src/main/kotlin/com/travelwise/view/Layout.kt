@@ -91,9 +91,9 @@ fun HTML.mainLayout(pageContent: DIV.() -> Unit) {
                     .htmx-indicator { display: none; opacity: 0; }
                     .htmx-request .htmx-indicator, .htmx-request.htmx-indicator { display: block; opacity: 1; }
                     
-                    /* Clean Brutalist Map Styling (Fix Blackscreen) */
-                    .leaflet-tile {
-                        filter: grayscale(100%) contrast(120%);
+                    /* Clean Brutalist Map Styling */
+                    .leaflet-container {
+                        background-color: #111111 !important;
                     }
                 """)
             }
@@ -119,50 +119,52 @@ fun HTML.mainLayout(pageContent: DIV.() -> Unit) {
     }
     body(classes = "min-h-screen flex flex-col p-4 md:p-8 selection:bg-[#E61919] selection:text-white relative") {
 
-        // PERBAIKAN 2: Menambahkan {} pada div overlay yang kosong
-        div("fixed inset-0 crt-overlay z-40 pointer-events-none") {}
-
-        // Navbar Brutalis
-        nav("border-b-2 border-slate-800 bg-[#12151a] sticky top-0 z-50") {
-            div("container mx-auto px-6 py-4 flex items-center justify-between") {
-                div("flex items-center gap-3 cursor-pointer") {
-                    div("w-9 h-9 bg-amber-400 text-black border-2 border-black flex items-center justify-center font-black text-xl shadow-[3px_3px_0px_0px_#ffffff]") {
-                        +"TW"
-                    }
-                    div {
-                        span("text-xl font-black font-heading tracking-widest text-white uppercase block leading-none") {
-                            +"TRAVELWISE //"
-                        }
-                        span("text-[10px] text-amber-400 font-mono tracking-tighter uppercase") {
-                            +"[ TELEMETRY_SYS_V2.6 ]"
-                        }
-                    }
-                }
-
-                div("flex items-center gap-4") {
-                    div("hidden md:flex items-center gap-2 px-3 py-1 bg-slate-900 border border-slate-700 text-xs font-mono text-slate-300") {
-                        span("text-amber-400 font-bold") { +"CTRL+K" }
-                        span { +"//" }
-                        span { +"QUICK_INPUT" }
-                    }
-                    div("flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500 text-emerald-400 text-xs font-bold uppercase") {
-                        // PERBAIKAN 2: Menambahkan {} pada span indikator yang kosong
-                        span("w-2 h-2 bg-emerald-400 animate-blink") {}
-                        +"SYSTEM_ONLINE"
-                    }
-                }
+        // 1. Noise SVG Overlay
+        div(classes = "pointer-events-none fixed inset-0 z-50 opacity-[0.03]") {
+            unsafe {
+                raw("""
+                    <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
+                        <filter id="noiseFilter"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" stitchTiles="stitch"/></filter>
+                        <rect width="100%" height="100%" filter="url(#noiseFilter)"/>
+                    </svg>
+                """)
             }
         }
 
-        div("container mx-auto px-4 py-8 md:py-12 relative z-10") {
-            // PERBAIKAN 1: Memanggil pageContent()
-            pageContent()
+        // 2. Ticker Tape
+        div(classes = "max-w-7xl mx-auto w-full border-b-2 border-[#050505] bg-[#050505] text-[#E61919] overflow-hidden py-1 mb-4") {
+            div(classes = "text-[10px] font-mono font-bold uppercase tracking-widest animate-ticker") {
+                +"/// SYSTEM LIVE FEED /// EXCHANGE RATE: 1 USD = 15,500 IDR (UPDATED 2 MINS AGO) /// GLOBAL METEOROLOGY: ACTIVE /// OPENSTREETMAP POI: CONNECTED /// KUNSTHAUS SWISS DESIGN ENABLED ///"
+            }
         }
 
-        footer("mt-20 py-8 border-t-2 border-slate-800 bg-[#090a0c] text-slate-500 text-xs font-mono text-center") {
-            div("container mx-auto px-4 uppercase tracking-widest") {
-                +"[ SYSTEM: TRAVELWISE OLEH KIYOSHI ] // INDUSTRIAL TELEMETRY INTERFACE // KTOR + HTMX ENGINE"
+        // HEADER / NAVIGATION
+        header(classes = "max-w-7xl mx-auto w-full swiss-border-b pb-4 mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4") {
+            div(classes = "flex items-end gap-3") {
+                div(classes = "w-14 h-14 bg-[#E61919] text-white flex items-center justify-center font-black text-3xl") { +"TW" }
+                div {
+                    h1(classes = "text-3xl font-black uppercase tracking-tighter") { +"TRAVELWISE" }
+                    p(classes = "text-xs font-bold uppercase tracking-widest text-gray-500 mt-1") { +"OPENSTREETMAP & WEATHER INTEGRATION / V.26" }
+                }
             }
+
+            div(classes = "text-xs font-bold uppercase text-right") {
+                span(classes = "text-[#E61919] animate-blink block") { +"[ SYSTEM STANDBY ]" }
+                span(classes = "text-gray-500") { +"SHORTCUT: CTRL+K TO SEARCH" }
+            }
+        }
+
+        // MAIN CONTAINER
+        main(classes = "max-w-7xl mx-auto w-full flex-grow relative overflow-hidden z-10") {
+            div {
+                pageContent()
+            }
+        }
+
+        // FOOTER
+        footer(classes = "max-w-7xl mx-auto w-full mt-24 pt-4 swiss-border-t flex flex-col md:flex-row justify-between text-xs font-bold uppercase text-gray-500 z-10") {
+            p(classes = "") { +"© 2026 / TRAVELWISE CORP." }
+            p(classes = "") { +"SWISS TYPOGRAPHIC ARCHITECTURE" }
         }
     }
 }
