@@ -1,24 +1,23 @@
-// Layout.kt
 package com.travelwise.view
 
 import kotlinx.html.*
 
-fun HTML.mainLayout(content: DIV.() -> Unit) {
+fun HTML.mainLayout(bodyContent: DIV.() -> Unit) {
     head {
         title { +"TRAVELWISE // SWISS TOURISM INDEX" }
         meta(name = "viewport", content = "width=device-width, initial-scale=1.0")
-        
+
         // Tailwind & HTMX
         script { src = "https://cdn.tailwindcss.com" }
         script { src = "https://unpkg.com/htmx.org@1.9.10" }
-        
+
         // Font Swiss Brutalism: Inter
         link { href = "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap"; rel = "stylesheet" }
-        
+
         // Leaflet CSS & JS untuk Peta
         link { href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"; rel = "stylesheet" }
         script { src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" }
-        
+
         style {
             unsafe {
                 raw("""
@@ -91,7 +90,7 @@ fun HTML.mainLayout(content: DIV.() -> Unit) {
                     .htmx-indicator { display: none; opacity: 0; }
                     .htmx-request .htmx-indicator, .htmx-request.htmx-indicator { display: block; opacity: 1; }
                     
-                    /* Map Filters for Brutalist Look (Grayscale/Invert) */
+                    /* Map Filters for Brutalist Look */
                     .leaflet-layer,
                     .leaflet-control-zoom-in,
                     .leaflet-control-zoom-out,
@@ -101,7 +100,7 @@ fun HTML.mainLayout(content: DIV.() -> Unit) {
                 """)
             }
         }
-        
+
         // Global Keyboard Shortcut (Ctrl+K)
         script {
             unsafe {
@@ -120,10 +119,10 @@ fun HTML.mainLayout(content: DIV.() -> Unit) {
             }
         }
     }
-    body("min-h-screen flex flex-col p-4 md:p-8 selection:bg-[#E61919] selection:text-white relative") {
-        
+    body(classes = "min-h-screen flex flex-col p-4 md:p-8 selection:bg-[#E61919] selection:text-white relative") {
+
         // 1. Noise SVG Overlay
-        div("pointer-events-none fixed inset-0 z-50 opacity-[0.03]") {
+        div(classes = "pointer-events-none fixed inset-0 z-50 opacity-[0.03]") {
             unsafe {
                 raw("""
                     <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
@@ -133,39 +132,41 @@ fun HTML.mainLayout(content: DIV.() -> Unit) {
                 """)
             }
         }
-        
+
         // 2. Ticker Tape (Data Log Bergerak)
-        div("max-w-7xl mx-auto w-full border-b-2 border-[#050505] bg-[#050505] text-[#E61919] overflow-hidden py-1 mb-4") {
-            div("text-[10px] font-mono font-bold uppercase tracking-widest animate-ticker") {
+        div(classes = "max-w-7xl mx-auto w-full border-b-2 border-[#050505] bg-[#050505] text-[#E61919] overflow-hidden py-1 mb-4") {
+            div(classes = "text-[10px] font-mono font-bold uppercase tracking-widest animate-ticker") {
                 +"/// SYSTEM LIVE FEED /// EXCHANGE RATE: 1 USD = 15,500 IDR (UPDATED 2 MINS AGO) /// GLOBAL METEOROLOGY: ACTIVE /// OPENSTREETMAP POI: CONNECTED /// KUNSTHAUS SWISS DESIGN ENABLED ///"
             }
         }
 
         // HEADER / NAVIGATION
-        header("max-w-7xl mx-auto w-full swiss-border-b pb-4 mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4") {
-            div("flex items-end gap-3") {
-                div("w-14 h-14 bg-[#E61919] text-white flex items-center justify-center font-black text-3xl") { +"TW" }
+        header(classes = "max-w-7xl mx-auto w-full swiss-border-b pb-4 mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4") {
+            div(classes = "flex items-end gap-3") {
+                div(classes = "w-14 h-14 bg-[#E61919] text-white flex items-center justify-center font-black text-3xl") { +"TW" }
                 div {
-                    h1("text-3xl font-black uppercase tracking-tighter") { +"TRAVELWISE" }
-                    p("text-xs font-bold uppercase tracking-widest text-gray-500 mt-1") { +"OPENSTREETMAP & WEATHER INTEGRATION / V.26" }
+                    h1(classes = "text-3xl font-black uppercase tracking-tighter") { +"TRAVELWISE" }
+                    p(classes = "text-xs font-bold uppercase tracking-widest text-gray-500 mt-1") { +"OPENSTREETMAP & WEATHER INTEGRATION / V.26" }
                 }
             }
-            
-            div("text-xs font-bold uppercase text-right") {
-                span("text-[#E61919] animate-blink block") { +"[ SYSTEM STANDBY ]" }
-                span("text-gray-500") { +"SHORTCUT: CTRL+K TO SEARCH" }
+
+            div(classes = "text-xs font-bold uppercase text-right") {
+                span(classes = "text-[#E61919] animate-blink block") { +"[ SYSTEM STANDBY ]" }
+                span(classes = "text-gray-500") { +"SHORTCUT: CTRL+K TO SEARCH" }
             }
         }
 
         // MAIN CONTAINER
-        main("max-w-7xl mx-auto w-full flex-grow relative overflow-hidden z-10") {
-            content()
+        main(classes = "max-w-7xl mx-auto w-full flex-grow relative overflow-hidden z-10") {
+            div {
+                bodyContent()
+            }
         }
-        
+
         // FOOTER
-        footer("max-w-7xl mx-auto w-full mt-24 pt-4 swiss-border-t flex flex-col md:flex-row justify-between text-xs font-bold uppercase text-gray-500 z-10") {
-            p { +"© 2026 / TRAVELWISE CORP." }
-            p { +"SWISS TYPOGRAPHIC ARCHITECTURE" }
+        footer(classes = "max-w-7xl mx-auto w-full mt-24 pt-4 swiss-border-t flex flex-col md:flex-row justify-between text-xs font-bold uppercase text-gray-500 z-10") {
+            p(classes = "") { +"© 2026 / TRAVELWISE CORP." }
+            p(classes = "") { +"SWISS TYPOGRAPHIC ARCHITECTURE" }
         }
     }
 }

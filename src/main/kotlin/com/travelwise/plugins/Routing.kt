@@ -31,7 +31,7 @@ suspend fun ApplicationCall.handleSearch(travelService: TravelService) {
     if (countryQuery.isEmpty()) {
         respondHtml {
             body {
-                div("border-2 border-red-500 bg-red-950/80 p-4 font-mono text-xs text-red-400 uppercase tracking-widest") {
+                div(classes = "border-2 border-red-500 bg-red-950/80 p-4 font-mono text-xs text-red-400 uppercase tracking-widest") {
                     +">> ERROR: PARAMETER_QUERY_EMPTY. PLEASE_ENTER_COUNTRY_NAME."
                 }
             }
@@ -64,28 +64,29 @@ suspend fun ApplicationCall.handleSearch(travelService: TravelService) {
                     }
 
                     // Mapping POI dari domain service ke layer View (PointOfInterest)
+                    // Perbaikan lat & lon dengan default value 0.0 agar tidak mismatch Double? vs Double
                     val viewPoiList = result.places.map { place ->
                         PointOfInterest(
                             name = place.name,
                             category = place.category ?: "ATTRACTION",
-                            osmLink = place.osmLink ?: "#",
-                            lat = place.lat,
-                            lon = place.lon
+                            osmLink = place.mapUrl ?: "#",
+                            lat = place.lat ?: 0.0,
+                            lon = place.lon ?: 0.0
                         )
                     }
 
-                    // -- Menyiapkan data Dummy Cost untuk UI Swiss Brutalist (Karena Model Budget lama tidak memiliki pecahan detil)
+                    // -- Menyiapkan data Dummy Cost untuk UI Swiss Brutalist
                     val localTotal = result.budget.dailyLocal ?: 0.0
-                    val idrTotal = localTotal * 15500 // Dummy kurs
-                    
+                    val idrTotal = localTotal * 15500.0 // Dummy kurs
+
                     val locAcc = String.format(Locale("id", "ID"), "%,.0f", localTotal * 0.5)
                     val locFood = String.format(Locale("id", "ID"), "%,.0f", localTotal * 0.3)
                     val locTrans = String.format(Locale("id", "ID"), "%,.0f", localTotal * 0.2)
-                    
+
                     val idrAcc = String.format(Locale("id", "ID"), "%,.0f", idrTotal * 0.5)
                     val idrFood = String.format(Locale("id", "ID"), "%,.0f", idrTotal * 0.3)
                     val idrTrans = String.format(Locale("id", "ID"), "%,.0f", idrTotal * 0.2)
-                    
+
                     val totLocStr = String.format(Locale("id", "ID"), "%,.0f", localTotal)
                     val totIdrStr = String.format(Locale("id", "ID"), "%,.0f", idrTotal)
 
@@ -95,23 +96,23 @@ suspend fun ApplicationCall.handleSearch(travelService: TravelService) {
                         population = String.format(Locale.US, "%,d", result.country.population),
                         recommendedActivity = formattedActivities,
                         seasonName = if (result.isIndoor) "Rekomendasi Indoor" else "Rekomendasi Outdoor",
-                        seasonDesc = "Engine: ${result.recommenderLabel} - Est. Cost: $formattedDailyBudget",
-                        
+                        seasonDesc = "Engine: ${result.recommenderLabel} | Est. Cost: $formattedDailyBudget",
+
                         countryName = result.country.name,
                         capital = result.country.capital,
                         destinationDescription = "Analisis destinasi otomatis berbasis telemetri cuaca dan lokasi.",
                         imageUrl = result.bannerUrl.ifBlank {
                             "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80"
                         },
-                        
+
                         // Perbaikan Tipe Data
                         temperature = result.weather.temperature.toString(),
                         humidity = result.weather.humidity.toString(),
-                        windSpeed = (result.weather.windSpeed ?: 12.0).toString(), 
+                        windSpeed = (result.weather.windSpeed ?: 12.0).toString(),
                         weatherDesc = result.weather.description,
                         isOutdoor = !result.isIndoor,
-                        
-                        // Parameter Currency & Cost yang tadinya missing
+
+                        // Parameter Currency & Cost
                         currencyCode = result.country.currencyCode,
                         tierSelected = tierParam,
                         localCostAcc = locAcc,
@@ -122,7 +123,7 @@ suspend fun ApplicationCall.handleSearch(travelService: TravelService) {
                         idrCostTrans = idrTrans,
                         totalLocalString = totLocStr,
                         totalIdrString = totIdrStr,
-                        
+
                         poiList = viewPoiList
                     )
                 }
@@ -131,7 +132,7 @@ suspend fun ApplicationCall.handleSearch(travelService: TravelService) {
         is TravelPlanResult.Error -> {
             respondHtml {
                 body {
-                    div("border-2 border-amber-500 bg-amber-950/80 p-4 font-mono text-xs text-amber-400 uppercase tracking-widest") {
+                    div(classes = "border-2 border-amber-500 bg-amber-950/80 p-4 font-mono text-xs text-amber-400 uppercase tracking-widest") {
                         +">> TELEMETRY_FETCH_FAILED: ${result.message}"
                     }
                 }
