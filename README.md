@@ -390,4 +390,4 @@ Silakan merujuk ke file [CONTRIBUTING.md](file:///c:/Tugas%20Kuliah/Semester%203
 
 ## 📄 Lisensi
 
-Proyek ini dilisensikan di bawah lisensi **MIT License** - lihat berkas [LICENSE](file:///c:/Tugas%20Kuliah/Semester%203/Praktek%20OOP/TravelWise/LICENSE) untuk informasi selengkapnya.
+Proyek ini dilisensikan di bawah lisensi **MIT License** - lihat berkas [LICENSE](LICENSE) untuk informasi selengkapnya.
